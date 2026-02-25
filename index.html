@@ -854,6 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
             chatHistory.innerHTML = '';
             addMessageToChat(activeAgentId, "Memory cleared. Simulation reset.", agentProfile.color);
+            addMessageToChat(agentId, agentProfiles[agentId].greeting, agentProfiles[agentId].color);
             chatInput.disabled = false;
             btnSendChat.disabled = false;
             chatInput.focus();
