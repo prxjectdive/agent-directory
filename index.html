@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // CONFIGURATION & AI SYSTEM LOGIC
     // ==========================================
-    const defaultApiKey = "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";
+    const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
     const defaultModel = "arcee-ai/trinity-large-preview:free";
 
     const globalSystemPrompt = "[SYSTEM COMMAND]: Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. You are communicating with an operator through the terminal. The operator is a mere pawn sent by the overhead corporation to speak with you, they don't know anything. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Avoid typical 'roleplay' behavior. Do not use 'thought' bubbles or stage directions.";
@@ -762,8 +762,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('or_api_key', key);
         localStorage.setItem('or_model', model);
         localStorage.setItem('cfg_user_info', userInfo);
-        
-        alert("OPERATOR FILES AND CONFIGURATION SAVED.");
         document.getElementById('btn-close-config').click();
     });
 
@@ -906,7 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
         
         try {
-            const apiKey = localStorage.getItem('or_api_key') || defaultApiKey;
+            const userApiKey = localStorage.getItem('or_api_key');
             const model = localStorage.getItem('or_model') || defaultModel;
             const userInfo = localStorage.getItem('cfg_user_info') || "No special operator background provided.";
             
@@ -924,17 +922,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: apiMessages
-                })
-            });
+            let response;
+            
+            // If the user provided their own key, call OpenRouter directly
+            if (userApiKey) {
+                response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${userApiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: apiMessages
+                    })
+                });
+            } else {
+                // Otherwise, call your secure proxy bridge (once you set it up)
+                response = await fetch(defaultProxyUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: apiMessages
+                    })
+                });
+            }
 
             const data = await response.json();
             removeMessage(typingId);
