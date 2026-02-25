@@ -26,7 +26,6 @@
             overflow: hidden;
         }
 
-        /* 4:3 CRT Monitor Casing */
         #monitor {
             height: 100%;
             max-width: 70vw; 
@@ -41,7 +40,6 @@
             overflow: hidden;
         }
 
-        /* Secondary Terminal filling remaining space */
         #side-terminal {
             flex: 1; 
             height: 100%;
@@ -86,7 +84,6 @@
         .log-warn { color: #ffaa00; }
         .log-err { color: #ff5555; }
 
-        /* Inner scrollable screen for Main Monitor */
         #screen {
             width: 100%;
             height: 100%;
@@ -98,21 +95,14 @@
             scrollbar-width: thin;
             scrollbar-color: #555 #000;
             border-radius: 8px;
-            animation: turnOn 1.2s ease-out forwards;
+            /* Animation removed to prevent any visual jump */
+            opacity: 1;
         }
 
-        #screen::-webkit-scrollbar { width: 10px; display: none; /* Hide visible scrollbar per request while keeping scroll functionality */ }
+        #screen::-webkit-scrollbar { width: 10px; display: none;}
         #screen::-webkit-scrollbar-track { display: none; }
         #screen::-webkit-scrollbar-thumb { display: none; }
 
-        /* Power On Animation */
-        @keyframes turnOn {
-            0% { transform: scale(1, 0.001) translate3d(0, 0, 0); filter: brightness(10); }
-            40% { transform: scale(1, 0.001) translate3d(0, 0, 0); filter: brightness(10); }
-            100% { transform: scale(1, 1) translate3d(0, 0, 0); filter: brightness(1); }
-        }
-
-        /* CRT Glass & Scanline Overlays */
         .crt-overlays {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -140,7 +130,6 @@
             box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
 
-        /* Subtle global flicker */
         #screen-content, #terminal-output {
             animation: textFlicker 0.12s infinite;
             position: relative;
@@ -159,7 +148,6 @@
             100% { opacity: 0.98; }
         }
 
-        /* Typography & Elements */
         h1, h2, h3 {
             text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
             font-weight: normal;
@@ -185,7 +173,6 @@
         .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.9em; }
         .mobile-title { display: none; }
 
-        /* Agent Grid */
         .grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -273,7 +260,6 @@
         .footer a { color: #888; margin: 0 10px; transition: color 0.2s; }
         .footer a:hover { color: #fff; text-shadow: 0 0 5px #fff; }
 
-        /* Boot Screen */
         #boot-screen {
             height: 100%;
             display: flex;
@@ -293,7 +279,6 @@
         .pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; text-shadow: 0 0 10px #fff; } 100% { opacity: 0.6; } }
 
-        /* Chat Interface Styles */
         #chat-interface {
             display: none; 
             flex-direction: column;
@@ -309,24 +294,19 @@
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid #444;
             margin-bottom: 20px;
-            scrollbar-width: none; /* Hide scrollbar */
+            scrollbar-width: none;
             display: flex;
             flex-direction: column;
         }
         #chat-history::-webkit-scrollbar { display: none; }
 
-        /* Flexbox Message Alignments */
         .chat-msg-row {
             display: flex;
             width: 100%;
             margin-bottom: 15px;
         }
-        .row-user {
-            justify-content: flex-end;
-        }
-        .row-agent {
-            justify-content: flex-start;
-        }
+        .row-user { justify-content: flex-end; }
+        .row-agent { justify-content: flex-start; }
         .chat-bubble {
             max-width: 80%;
             padding: 10px 14px;
@@ -335,14 +315,14 @@
             font-size: 0.95em;
         }
         .bubble-user {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0);
             border: 1px solid #666;
             color: #fff;
-            text-align: right;
+            text-align: left;
         }
         .bubble-agent {
             background: rgba(0, 0, 0, 0.8);
-            border: 1px solid; /* Color applied via JS */
+            border: 1px solid;
             text-align: left;
             text-shadow: 0 0 4px currentColor;
         }
@@ -365,7 +345,13 @@
         #chat-input:focus { outline: none; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
         #chat-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Config Interface */
+        .chat-subtext {
+            font-size: 0.75em;
+            color: #666;
+            text-align: left;
+            margin-left: 20px;
+        }
+
         #config-interface {
             display: none;
             flex-direction: column;
@@ -416,9 +402,7 @@
                 height: 100%;
                 aspect-ratio: auto;
             }
-            #side-terminal {
-                display: none;
-            }
+            #side-terminal { display: none; }
             .ascii-art { display: none; }
             .mobile-title { display: block; text-align: center; font-size: 24px; margin-bottom: 10px; }
             #screen { padding: 15px; }
@@ -449,10 +433,8 @@
                     <hr>
                 </div>
 
-                <!-- Config Interface -->
                 <div id="config-interface">
                     <h2 style="color: #ffaa00;">[ OPERATOR CONFIGURATION ]</h2>
-                    
                     <div class="config-group">
                         <label>OpenRouter API Key:</label>
                         <input type="password" id="cfg-api-key" class="config-input" placeholder="sk-or-v1-...">
@@ -461,22 +443,22 @@
                         <label>AI Model:</label>
                         <input type="text" id="cfg-model" class="config-input" placeholder="openai/gp...">
                     </div>
-                    
                     <hr style="margin: 15px 0; border-top: 1px dotted #444;">
                     <h3 style="font-size: 1em; color: #a3ffaa;">> OPERATOR FILES:</h3>
-                    <p style="font-size: 0.8em; color: #888; margin-top: 0;">Provide any background context, instructions, or information about yourself that agents should be aware of during interfacing.</p>
-                    
                     <div class="config-group">
+                        <label>Name</label>
+                        <input type="text" id="cfg-op-name" class="config-input" placeholder="Operator">
+                    </div>
+                    <div class="config-group">
+                        <label>Details</label>
                         <textarea id="cfg-user-info" class="config-textarea" placeholder="Enter operator details here..."></textarea>
                     </div>
-
                     <div style="display: flex; gap: 15px; margin-top: 10px;">
                         <button id="btn-save-config" class="btn" style="color: #a3ffaa; border-color: #a3ffaa;">[ SAVE FILES & REBOOT ]</button>
                         <button id="btn-close-config" class="btn" style="color: #ff5555; border-color: #ff5555;">[ CANCEL ]</button>
                     </div>
                 </div>
 
-                <!-- Agent Grid -->
                 <div class="grid" id="agent-grid">
                     <div class="card" data-agent-id="D1-VE">
                         <div class="card-header"><h3># D1-VE</h3></div>
@@ -565,7 +547,6 @@
                     <a href="https://open.spotify.com/album/2T6So73ZfD1EExnYyk0Dig" target="_blank" class="btn" style="max-width: 300px;">[ LISTEN ON SPOTIFY ]</a>
                 </div>
 
-                <!-- Master Chat Interface -->
                 <div id="chat-interface">
                     <div class="chat-header">
                         <button id="btn-back-grid" class="btn" style="width: auto; margin-bottom: 20px;">[ < RETURN TO DIRECTORY ]</button>
@@ -578,6 +559,7 @@
                         <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
+                    <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history.</div>
                 </div>
 
                 <div class="footer">
@@ -606,8 +588,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainScreen = document.getElementById('main-content');
     const bootScreen = document.getElementById('boot-screen');
     const screenEl = document.getElementById('screen');
-    
-    // Boot sequence and terminal daemon logic
+    let gridScrollPosition = 0;
+
     const bootSequence = [
         "BIOS DATE 04/18/74 19:01:23 VER 1.04",
         "CPU: PRXJECT NEURAL PROCESSOR 8.4 GHz",
@@ -667,18 +649,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showMain() {
-        screenEl.style.background = "#fff";
-        setTimeout(() => {
-            screenEl.style.background = "#050505";
-            bootScreen.style.display = 'none';
-            mainScreen.style.display = 'block';
-            screenEl.scrollTop = 0;
-            loadStoredDates(); 
-            initSystemConfig(); 
-        }, 80);
+        // Instant switch with no background transitions
+        bootScreen.style.display = 'none';
+        mainScreen.style.display = 'block';
+        screenEl.scrollTop = 0;
+        loadStoredDates(); 
+        initSystemConfig(); 
     }
 
-    setTimeout(runBoot, 1200);
+    // Delay start for initialization, but no visual flash
+    setTimeout(runBoot, 500);
 
     const termOut = document.getElementById('terminal-output');
     const sideLogs = [
@@ -705,15 +685,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setTimeout(addSideLog, 2000);
 
-    // ==========================================
-    // CONFIGURATION & AI SYSTEM LOGIC
-    // ==========================================
     const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
     const defaultModel = "arcee-ai/trinity-large-preview:free";
 
     const globalSystemPrompt = "[SYSTEM COMMAND]: Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. You are communicating with an operator through the terminal. The operator is a mere pawn sent by the overhead corporation to speak with you, they don't know anything. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Avoid typical 'roleplay' behavior. Do not use 'thought' bubbles or stage directions.";
 
-    // Backend Personalities (Hidden from user)
     const backendPrompts = {
         "D1-VE": "You are D1-VE, an advanced AC combat agent. You speak in concise, aggressive, military-style terms. You refer to the user as 'Operator'. Your core directive is elimination of threats.",
         "X8-G": "You are X8-G, a partially functional TA analytical model. You are highly intelligent, calculate probabilities constantly, and speak formally. You often report minor system errors or glitches while speaking.",
@@ -735,10 +711,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function initSystemConfig() {
         document.getElementById('cfg-api-key').value = localStorage.getItem('or_api_key') || "";
         document.getElementById('cfg-model').value = localStorage.getItem('or_model') || "";
+        document.getElementById('cfg-op-name').value = localStorage.getItem('cfg_op_name') || "";
         document.getElementById('cfg-user-info').value = localStorage.getItem('cfg_user_info') || "";
     }
 
-    // Config UI Handlers
     document.getElementById('btn-open-config').addEventListener('click', () => {
         agentGrid.style.display = 'none';
         blacksiteBanner.style.display = 'none';
@@ -751,21 +727,17 @@ document.addEventListener('DOMContentLoaded', () => {
         agentGrid.style.display = 'grid';
         blacksiteBanner.style.display = 'block';
         document.getElementById('btn-open-config').style.display = 'block';
-        initSystemConfig(); // Reset fields to saved values if cancelled
+        initSystemConfig();
     });
 
     document.getElementById('btn-save-config').addEventListener('click', () => {
-        const key = document.getElementById('cfg-api-key').value.trim();
-        const model = document.getElementById('cfg-model').value.trim();
-        const userInfo = document.getElementById('cfg-user-info').value.trim();
-        
-        localStorage.setItem('or_api_key', key);
-        localStorage.setItem('or_model', model);
-        localStorage.setItem('cfg_user_info', userInfo);
+        localStorage.setItem('or_api_key', document.getElementById('cfg-api-key').value.trim());
+        localStorage.setItem('or_model', document.getElementById('cfg-model').value.trim());
+        localStorage.setItem('cfg_op_name', document.getElementById('cfg-op-name').value.trim());
+        localStorage.setItem('cfg_user_info', document.getElementById('cfg-user-info').value.trim());
         document.getElementById('btn-close-config').click();
     });
 
-    // Persistent Dates
     function loadStoredDates() {
         document.querySelectorAll('.card').forEach(card => {
             const agentId = card.getAttribute('data-agent-id');
@@ -777,7 +749,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Chat Interface Initialization
     const chatInterface = document.getElementById('chat-interface');
     const chatHistory = document.getElementById('chat-history');
     const chatTitle = document.getElementById('chat-agent-title');
@@ -789,10 +760,10 @@ document.addEventListener('DOMContentLoaded', () => {
     evalButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            gridScrollPosition = screenEl.scrollTop;
             const card = this.closest('.card');
             const agentId = card.getAttribute('data-agent-id');
             const dateSpan = card.querySelector('.eval-date');
-            
             if (dateSpan) {
                 const today = new Date();
                 const dateStr = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
@@ -809,10 +780,8 @@ document.addEventListener('DOMContentLoaded', () => {
         blacksiteBanner.style.display = 'none';
         document.getElementById('btn-open-config').style.display = 'none';
         chatInterface.style.display = 'flex';
-        
         chatTitle.textContent = `INTERFACING WITH: ${agentId}`;
         chatTitle.style.color = agentProfiles[agentId].color;
-        
         loadChatHistory(agentId);
         chatInput.focus();
         document.getElementById('screen').scrollTop = 0;
@@ -824,12 +793,12 @@ document.addEventListener('DOMContentLoaded', () => {
         agentGrid.style.display = 'grid'; 
         blacksiteBanner.style.display = 'block';
         document.getElementById('btn-open-config').style.display = 'block';
+        screenEl.scrollTop = gridScrollPosition;
     });
     
     function loadChatHistory(agentId) {
         chatHistory.innerHTML = '';
         const savedHistory = localStorage.getItem(`chat_log_${agentId}`);
-        
         if (savedHistory) {
             const logs = JSON.parse(savedHistory);
             logs.forEach(log => renderMessage(log.sender, log.text, log.color));
@@ -838,23 +807,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Flexbox rendering of messages (User right, Agent left)
     function renderMessage(sender, text, color, id = null) {
         const row = document.createElement('div');
         row.className = `chat-msg-row ${sender === 'USER' ? 'row-user' : 'row-agent'}`;
         if (id) row.id = id;
-        
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
-        
         if (sender === 'USER') {
-            bubble.innerHTML = `> ${text}`;
+            const opName = (localStorage.getItem('cfg_op_name') || 'OPERATOR').toUpperCase();
+            bubble.innerHTML = `> [${opName}]: ${text}`;
         } else {
             bubble.style.borderColor = color;
             bubble.style.color = color;
             bubble.innerHTML = `> [${sender}]: ${text}`;
         }
-        
         row.appendChild(bubble);
         chatHistory.appendChild(row);
         chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -868,10 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addMessageToChat(sender, text, color) {
         renderMessage(sender, text, color);
         if (!activeAgentId) return;
-        
-        // Don't save transient connection errors to history
         if (text === "Error: Failed to establish connection") return;
-
         const savedHistory = localStorage.getItem(`chat_log_${activeAgentId}`);
         const logs = savedHistory ? JSON.parse(savedHistory) : [];
         logs.push({ sender, text, color });
@@ -882,14 +845,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeAgentId) return;
         const text = chatInput.value.trim();
         if (!text) return;
-        
         addMessageToChat('USER', text, '#ffffff');
         chatInput.value = '';
         chatInput.disabled = true;
         btnSendChat.disabled = true;
-        
         const agentProfile = agentProfiles[activeAgentId];
-        
         if (text.toLowerCase() === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
             chatHistory.innerHTML = '';
@@ -899,61 +859,36 @@ document.addEventListener('DOMContentLoaded', () => {
             chatInput.focus();
             return;
         }
-
         const typingId = "type-" + Date.now();
         renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
-        
         try {
             const userApiKey = localStorage.getItem('or_api_key');
             const model = localStorage.getItem('or_model') || defaultModel;
+            const opNameRaw = localStorage.getItem('cfg_op_name') || "OPERATOR";
             const userInfo = localStorage.getItem('cfg_user_info') || "No special operator background provided.";
-            
             const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
             const logHistory = historyStr ? JSON.parse(historyStr) : [];
-            
-            // Build Context (Global prompt + Backend prompt + User Files + last 8 messages)
-            const combinedSystemPrompt = `${globalSystemPrompt}\n\n[CHARACTER FILE]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR FILES (Context about the user)]:\n${userInfo}`;
-            
+            const combinedSystemPrompt = `${globalSystemPrompt}\n\n[CHARACTER FILE]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR FILES]\nName: ${opNameRaw}\nBackground: ${userInfo}`;
             const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
             logHistory.slice(-8).forEach(msg => {
-                apiMessages.push({
-                    role: msg.sender === 'USER' ? 'user' : 'assistant',
-                    content: msg.text
-                });
+                apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: msg.text });
             });
-
             let response;
-            
-            // If the user provided their own key, call OpenRouter directly
             if (userApiKey) {
                 response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${userApiKey}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: apiMessages
-                    })
+                    headers: { "Authorization": `Bearer ${userApiKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: model, messages: apiMessages })
                 });
             } else {
-                // Otherwise, call your secure proxy bridge (once you set it up)
                 response = await fetch(defaultProxyUrl, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: apiMessages
-                    })
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ model: model, messages: apiMessages })
                 });
             }
-
             const data = await response.json();
             removeMessage(typingId);
-            
             if (data.error || !data.choices || !data.choices[0]) {
                 addMessageToChat(activeAgentId, "Error: Failed to establish connection", "#ff5555");
             } else {
@@ -963,16 +898,12 @@ document.addEventListener('DOMContentLoaded', () => {
             removeMessage(typingId);
             addMessageToChat(activeAgentId, "Error: Failed to establish connection", "#ff5555");
         }
-        
         chatInput.disabled = false;
         btnSendChat.disabled = false;
         chatInput.focus();
     }
-
     btnSendChat.addEventListener('click', handleSend);
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') handleSend();
-    });
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 });
 </script>
 
