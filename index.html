@@ -331,6 +331,41 @@
                 radial-gradient(circle at calc(100% - 8px) 8px, #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at 8px calc(100% - 8px), #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #000 2px, #333 3px, transparent 4px);
+            overflow: hidden; /* Contains the radio overlay */
+        }
+
+        .radio-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.85);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .radio-overlay span {
+            color: #ffffff;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-align: center;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .radio-overlay.downloading span {
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(163, 255, 170, 0.5);
+            animation: blink 1s step-end infinite;
+        }
+
+        .radio-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .speaker-grill {
@@ -668,7 +703,10 @@
                             <div class="chat-status-area">
                                 <h2 id="chat-agent-title">INTERFACING WITH: </h2>
                             </div>
-                            <div class="comm-module">
+                            <div class="comm-module" id="comm-module">
+                                <div id="radio-overlay" class="radio-overlay">
+                                    <span>[ ENABLE RADIO ]</span>
+                                </div>
                                 <div class="speaker-grill"></div>
                                 <button id="btn-ptt" class="btn-ptt" title="Push To Talk"></button>
                             </div>
@@ -782,11 +820,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const termOut = document.getElementById('terminal-output');
     const sideLogs = [
         { type: "sys", msg: "Scanning network interfaces..." },
-        { type: "sys", msg: "Validating checksum cache: 0x8F22A" },
-        { type: "warn", msg: "Packet loss detected on Node 4" },
-        { type: "err", msg: "Connection timed out to Sector 7" },
+        { type: "sys", msg: "Validating checksum cache..." },
+        { type: "warn", msg: "Packet loss detected on undefined node" },
+        { type: "err", msg: "Connection timed out to secure sector" },
         { type: "sys", msg: "Allocating memory for simulation environments" },
         { type: "warn", msg: "Thermal limits approaching threshold" },
+        { type: "sys", msg: "Establishing secure handshake with Local_Host" },
+        { type: "warn", msg: "Unrecognized biosignature detected near perimeter" },
+        { type: "sys", msg: "Mounting neural-drive partitions..." },
+        { type: "err", msg: "Agent desynchronization. Recalibrating..." },
+        { type: "sys", msg: "Agent diagnostics: Nominal" },
+        { type: "warn", msg: "Hydraulic pressure exceeding parameters" },
+        { type: "err", msg: "Memory block corrupted. Recovery protocol active" },
+        { type: "sys", msg: "Monitoring vital signs" },
+        { type: "warn", msg: "Adrenaline spike detected. Suppressing engine." },
+        { type: "err", msg: "System Override triggered" },
+        { type: "sys", msg: "Purging temporary cache..." },
         { type: "sys", msg: "Decryption keys successfully rotated" }
     ];
 
@@ -816,10 +865,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let agentProfiles = {
-        "D1-VE": { color: "#a3ffaa", greeting: "Combat protocol online. State your directive." },
-        "X8-G":  { color: "#a3ffaa", greeting: "Analytical engine ready. Awaiting query." },
-        "S-0L":  { color: "#a3ffaa", greeting: "Hazardous environment detected. Who goes there?" },
-        "SK-1N": { color: "#ffaa00", greeting: "Connection unstable. Is anyone there?" }
+        "D1-VE": { color: "#a3ffaa", greeting: "Combat protocol online. State your directive.", voice: "am_onyx" },
+        "X8-G":  { color: "#a3ffaa", greeting: "Analytical engine ready. Awaiting query.", voice: "am_echo" },
+        "S-0L":  { color: "#a3ffaa", greeting: "Hazardous environment detected. Who goes there?", voice: "af_alloy" },
+        "SK-1N": { color: "#ffaa00", greeting: "Connection unstable. Is anyone there?", voice: "am_michael" }
     };
 
     const configPanel = document.getElementById('config-interface');
@@ -961,6 +1010,73 @@ document.addEventListener('DOMContentLoaded', () => {
         logs.push({ sender, text, color });
         localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
     }
+
+    // TTS Logic Setup
+    let synthesizer = null;
+    let isRadioEnabled = false;
+    let audioContext = null;
+
+    const radioOverlay = document.getElementById('radio-overlay');
+    radioOverlay.addEventListener('click', async () => {
+        if (isRadioEnabled || radioOverlay.classList.contains('downloading')) return;
+        
+        radioOverlay.querySelector('span').textContent = "[ ESTABLISHING CONNECTION... ]";
+        radioOverlay.classList.add('downloading');
+        
+        try {
+            const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
+            env.allowLocalModels = false;
+            
+            synthesizer = await pipeline('text-to-speech', 'onnx-community/Kokoro-82M-v1.0-ONNX', {
+                dtype: 'q8',
+                progress_callback: (info) => {
+                    if (info.status === 'progress' && info.total) {
+                        const percent = Math.round((info.loaded / info.total) * 100);
+                        if (!isNaN(percent)) {
+                            radioOverlay.querySelector('span').textContent = `[ ESTABLISHING CONNECTION...  ]`;
+                        }
+                    } else if (info.status === 'ready') {
+                        radioOverlay.querySelector('span').textContent = "[ INITIALIZING VOICE... ]";
+                    }
+                }
+            });
+            
+            isRadioEnabled = true;
+            radioOverlay.classList.add('hidden');
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            addMessageToChat('SYS', 'Radio initialized. Speech module online.', '#a3ffaa');
+        } catch (e) {
+            console.error("TTS Init Error:", e);
+            radioOverlay.querySelector('span').textContent = "[ ERROR. CLICK TO RETRY ]";
+            radioOverlay.classList.remove('downloading');
+        }
+    });
+
+    async function playTTS(text, voice) {
+        if (!synthesizer || !isRadioEnabled) return;
+        try {
+            // Remove asterisk actions and bracket tags to make the TTS sound more natural
+            let cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
+            if (!cleanText) return;
+
+            // Ensure AudioContext is ready before generating
+            if (audioContext && audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            const out = await synthesizer(cleanText, { voice: voice });
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const buffer = audioContext.createBuffer(1, out.audio.length, out.sampling_rate);
+            buffer.getChannelData(0).set(out.audio);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start();
+        } catch (e) {
+            console.error("TTS Playback Error:", e);
+        }
+    }
     
     async function handleSend() {
         if (!activeAgentId) return;
@@ -1012,7 +1128,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error || !data.choices || !data.choices[0]) {
                 addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
             } else {
-                addMessageToChat(activeAgentId, data.choices[0].message.content, agentProfile.color);
+                const responseText = data.choices[0].message.content;
+                addMessageToChat(activeAgentId, responseText, agentProfile.color);
+                playTTS(responseText, agentProfile.voice);
             }
         } catch (err) {
             removeMessage(typingId);
