@@ -101,9 +101,9 @@
             animation: turnOn 1.2s ease-out forwards;
         }
 
-        #screen::-webkit-scrollbar { width: 10px; }
-        #screen::-webkit-scrollbar-track { background: #000; border-left: 1px solid #333; }
-        #screen::-webkit-scrollbar-thumb { background: #fff; }
+        #screen::-webkit-scrollbar { width: 10px; display: none; /* Hide visible scrollbar per request while keeping scroll functionality */ }
+        #screen::-webkit-scrollbar-track { display: none; }
+        #screen::-webkit-scrollbar-thumb { display: none; }
 
         /* Power On Animation */
         @keyframes turnOn {
@@ -136,8 +136,8 @@
             display: block;
             position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
-            background: radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.8) 100%);
-            box-shadow: inset 0 0 50px rgba(0,0,0,1);
+            background: radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.4) 100%);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
 
         /* Subtle global flicker */
@@ -229,14 +229,6 @@
 
         .card:hover .img-container img { filter: grayscale(100%) contrast(1.8) brightness(1); }
 
-        .img-container::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 2px, transparent 2px, transparent 4px);
-            pointer-events: none;
-        }
-
         .data-row {
             display: flex;
             justify-content: space-between;
@@ -301,6 +293,117 @@
         .pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; text-shadow: 0 0 10px #fff; } 100% { opacity: 0.6; } }
 
+        /* Chat Interface Styles */
+        #chat-interface {
+            display: none; 
+            flex-direction: column;
+            min-height: 60vh;
+            margin-top: 20px;
+        }
+        #chat-history {
+            flex: 1;
+            min-height: 350px;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #444;
+            margin-bottom: 20px;
+            scrollbar-width: none; /* Hide scrollbar */
+            display: flex;
+            flex-direction: column;
+        }
+        #chat-history::-webkit-scrollbar { display: none; }
+
+        /* Flexbox Message Alignments */
+        .chat-msg-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .row-user {
+            justify-content: flex-end;
+        }
+        .row-agent {
+            justify-content: flex-start;
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            font-size: 0.95em;
+        }
+        .bubble-user {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #666;
+            color: #fff;
+            text-align: right;
+        }
+        .bubble-agent {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid; /* Color applied via JS */
+            text-align: left;
+            text-shadow: 0 0 4px currentColor;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
+            color: #fff;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        #chat-input:focus { outline: none; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        #chat-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Config Interface */
+        #config-interface {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px dashed #555;
+            margin-top: 20px;
+        }
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .config-group label {
+            color: #aaa;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .config-input {
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            font-family: inherit;
+        }
+        .config-textarea {
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
         @media (max-width: 850px) {
             body {
                 padding: 10px;
@@ -331,6 +434,7 @@
             <div id="boot-screen">
                 <div id="boot-text"></div>
             </div>
+            
             <div id="main-content" style="display:none;">
                 <div class="header">
                     <h1 class="mobile-title">[ PRXJECT DIVE ]</h1>
@@ -341,15 +445,43 @@
 (__)  (__\_)(_/\_)\___/ (____)\___) (__) (____/(__\ \__/ (____)
                     </pre>
                     <p class="subtitle">SYSTEM TERMINAL_v2.4 // CONNECTION SECURE // DIRECTORY: /AGENTS/</p>
+                    <button id="btn-open-config" class="btn" style="width: auto; margin: 0 auto; display: block; font-size: 0.85em; border-style: dashed;">[ OPERATOR SYSTEM CONFIGURATION ]</button>
                     <hr>
                 </div>
 
-                <div class="grid">
-                    <!-- Added data-agent-id for persistent tracking -->
+                <!-- Config Interface -->
+                <div id="config-interface">
+                    <h2 style="color: #ffaa00;">[ OPERATOR CONFIGURATION ]</h2>
+                    
+                    <div class="config-group">
+                        <label>OpenRouter API Key:</label>
+                        <input type="password" id="cfg-api-key" class="config-input" placeholder="sk-or-v1-...">
+                    </div>
+                    <div class="config-group">
+                        <label>AI Model:</label>
+                        <input type="text" id="cfg-model" class="config-input" placeholder="openai/gp...">
+                    </div>
+                    
+                    <hr style="margin: 15px 0; border-top: 1px dotted #444;">
+                    <h3 style="font-size: 1em; color: #a3ffaa;">> OPERATOR FILES:</h3>
+                    <p style="font-size: 0.8em; color: #888; margin-top: 0;">Provide any background context, instructions, or information about yourself that agents should be aware of during interfacing.</p>
+                    
+                    <div class="config-group">
+                        <textarea id="cfg-user-info" class="config-textarea" placeholder="Enter operator details here..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-top: 10px;">
+                        <button id="btn-save-config" class="btn" style="color: #a3ffaa; border-color: #a3ffaa;">[ SAVE FILES & REBOOT ]</button>
+                        <button id="btn-close-config" class="btn" style="color: #ff5555; border-color: #ff5555;">[ CANCEL ]</button>
+                    </div>
+                </div>
+
+                <!-- Agent Grid -->
+                <div class="grid" id="agent-grid">
                     <div class="card" data-agent-id="D1-VE">
                         <div class="card-header"><h3># D1-VE</h3></div>
                         <div class="img-container">
-                            <img src="https://prxjectdive.carrd.co/assets/images/image03.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'" alt="D1-VE Agent Profile">
+                            <img src="https://i.imgur.com/NZROAsF.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'" alt="D1-VE Agent Profile">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>AC Agent</span></div>
@@ -361,14 +493,14 @@
                             <div class="data-row"><span>Next Milestone:</span> <span>Field-simulation</span></div>
                         </div>
                         <div class="card-footer">
-                            <a href="https://prxjectdive-chatrooms.carrd.co/#vein" target="_blank" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
+                            <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
                         </div>
                     </div>
 
                     <div class="card" data-agent-id="X8-G">
                         <div class="card-header"><h3># X8-G</h3></div>
                         <div class="img-container">
-                            <img src="https://prxjectdive.carrd.co/assets/images/image01.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80'" alt="X8-G Agent Profile">
+                            <img src="https://i.imgur.com/gJH3c26.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80'" alt="X8-G Agent Profile">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>TA Agent</span></div>
@@ -380,14 +512,14 @@
                             <div class="data-row"><span>Next Milestone:</span> <span>Postponed</span></div>
                         </div>
                         <div class="card-footer">
-                            <a href="https://discord.gg/PPqEnJvWWs" target="_blank" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
+                            <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
                         </div>
                     </div>
 
                     <div class="card" data-agent-id="S-0L">
                         <div class="card-header"><h3># S-0L</h3></div>
                         <div class="img-container">
-                            <img src="https://prxjectdive.carrd.co/assets/images/image04.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&w=600&q=80'" alt="S-0L Agent Profile">
+                            <img src="https://i.imgur.com/8jYIrQV.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&w=600&q=80'" alt="S-0L Agent Profile">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>HA Agent</span></div>
@@ -399,14 +531,14 @@
                             <div class="data-row"><span>Next Milestone:</span> <span>Re-calibration</span></div>
                         </div>
                         <div class="card-footer">
-                            <a href="https://discord.gg/PPqEnJvWWs" target="_blank" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
+                            <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
                         </div>
                     </div>
 
                     <div class="card" data-agent-id="SK-1N">
                         <div class="card-header"><h3># SK-1N</h3></div>
                         <div class="img-container">
-                            <img src="https://prxjectdive.carrd.co/assets/images/image05.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'" alt="3RU-7E Agent Profile">
+                            <img src="https://i.imgur.com/jX2zNys.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'" alt="3RU-7E Agent Profile">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>Human</span></div>
@@ -418,19 +550,34 @@
                             <div class="data-row"><span>Next Milestone:</span> <span>Awaiting</span></div>
                         </div>
                         <div class="card-footer">
-                            <a href="https://discord.gg/PPqEnJvWWs" target="_blank" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
+                            <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
                         </div>
                     </div>
                 </div>
 
-                <div class="blacksite-section">
+                <div class="blacksite-section" id="blacksite-banner">
                     <hr>
                     <h2>prxject://blacksite</h2>
                     <div class="img-container" style="max-width: 300px; margin: 0 auto 20px;">
-                        <img src="https://prxjectdive.carrd.co/assets/images/image02.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1478358161113-b0e11994a36b?auto=format&fit=crop&w=600&q=80'" alt="Blacksite Album">
+                        <img src="https://i.imgur.com/L1JskZy.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1478358161113-b0e11994a36b?auto=format&fit=crop&w=600&q=80'" alt="Blacksite Album">
                     </div>
                     <p style="font-weight: bold; font-size: 0.9em;">AVAILABLE NOW</p>
                     <a href="https://open.spotify.com/album/2T6So73ZfD1EExnYyk0Dig" target="_blank" class="btn" style="max-width: 300px;">[ LISTEN ON SPOTIFY ]</a>
+                </div>
+
+                <!-- Master Chat Interface -->
+                <div id="chat-interface">
+                    <div class="chat-header">
+                        <button id="btn-back-grid" class="btn" style="width: auto; margin-bottom: 20px;">[ < RETURN TO DIRECTORY ]</button>
+                        <h2 id="chat-agent-title">INTERFACING WITH: </h2>
+                        <hr>
+                    </div>
+                    <div id="chat-history"></div>
+                    <div class="chat-input-area">
+                        <span style="font-weight: bold; font-size: 1.2em;">></span>
+                        <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
+                        <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
+                    </div>
                 </div>
 
                 <div class="footer">
@@ -460,8 +607,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const bootScreen = document.getElementById('boot-screen');
     const screenEl = document.getElementById('screen');
     
+    // Boot sequence and terminal daemon logic
     const bootSequence = [
-        "BIOS DATE 04/18/89 19:01:23 VER 1.04",
+        "BIOS DATE 04/18/74 19:01:23 VER 1.04",
         "CPU: PRXJECT NEURAL PROCESSOR 8.4 GHz",
         "MEMORY CHECK: 1048576K OK",
         "LOADING KERNEL MODULES ................... OK",
@@ -470,8 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "DECRYPTING AGENT RECORDS ................. OK",
         " ",
         "WARNING: UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.",
-        "ALL LOGS ARE MONITORED.",
-        " "
+        " ",
     ];
 
     async function runBoot() {
@@ -487,9 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 p.textContent = "> ";
                 for (let j = 0; j < text.length; j++) {
                     p.textContent += text[j];
-                    if (Math.random() > 0.3) {
-                        await new Promise(r => setTimeout(r, 8)); 
-                    }
+                    if (Math.random() > 0.3) await new Promise(r => setTimeout(r, 8)); 
                 }
             }
             await new Promise(r => setTimeout(r, Math.random() * 150 + 50));
@@ -502,10 +647,16 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.style.width = 'auto';
         btn.style.border = 'none';
         btn.style.textAlign = 'left';
-        btn.innerHTML = "PRESS ENTER OR CLICK HERE TO EXPLORE <span class='cursor'></span>";
         btn.onclick = showMain;
         bootDiv.appendChild(btn);
-        screenEl.scrollTop = screenEl.scrollHeight;
+        
+        const finalMsg = "PRESS ENTER OR CLICK HERE TO EXPLORE ";
+        for (let j = 0; j < finalMsg.length; j++) {
+            btn.innerHTML += finalMsg[j];
+            await new Promise(r => setTimeout(r, 15));
+            screenEl.scrollTop = screenEl.scrollHeight;
+        }
+        btn.innerHTML += "<span class='cursor'></span>";
         
         window.addEventListener('keydown', function enterHandler(e) {
             if(e.key === 'Enter') {
@@ -522,43 +673,27 @@ document.addEventListener('DOMContentLoaded', () => {
             bootScreen.style.display = 'none';
             mainScreen.style.display = 'block';
             screenEl.scrollTop = 0;
-            loadStoredDates(); // Load dates once the main screen is visible
+            loadStoredDates(); 
+            initSystemConfig(); 
         }, 80);
     }
 
     setTimeout(runBoot, 1200);
 
     const termOut = document.getElementById('terminal-output');
-    const logs = [
+    const sideLogs = [
         { type: "sys", msg: "Scanning network interfaces..." },
-        { type: "sys", msg: "Listening on port 8080" },
         { type: "sys", msg: "Validating checksum cache: 0x8F22A" },
         { type: "warn", msg: "Packet loss detected on Node 4" },
-        { type: "sys", msg: "Agent telemetry sync complete" },
         { type: "err", msg: "Connection timed out to Sector 7" },
-        { type: "sys", msg: "Re-routing traffic via proxy" },
         { type: "sys", msg: "Allocating memory for simulation environments" },
         { type: "warn", msg: "Thermal limits approaching threshold" },
-        { type: "sys", msg: "Cron job 'cleanup_old_logs' executed." },
-        { type: "sys", msg: "Executing background protocol '7X003'" },
         { type: "sys", msg: "Decryption keys successfully rotated" },
-        { type: "err", msg: "Agent blocklist rejection" },
-        { type: "sys", msg: "Establishing secure handshake with host" },
-        { type: "warn", msg: "Unrecognized biosignature detected near perimeter" },
-        { type: "sys", msg: "Mounting neural-drive partitions..." },
-        { type: "err", msg: "Agent motor-cortex desynchronization. Recalibrating..." },
-        { type: "sys", msg: "Agent diagnostics: Nominal" },
-        { type: "warn", msg: "Hydraulic pressure exceeding parameters" },
-        { type: "sys", msg: "Pinging outpost servers" },
-        { type: "err", msg: "Memory block 0x4A corrupted" },
-        { type: "sys", msg: "Monitoring vital signs" },
-        { type: "warn", msg: "Spike in adrenaline detected. Suppressing engine..." },
-        { type: "err", msg: "FATAL: System Override triggered manually" },
-        { type: "sys", msg: "Purging temporary cache..." }
+        { type: "warn", msg: "Unrecognized biosignature detected near perimeter" }
     ];
 
     function addSideLog() {
-        const entry = logs[Math.floor(Math.random() * logs.length)];
+        const entry = sideLogs[Math.floor(Math.random() * sideLogs.length)];
         const time = new Date().toISOString().substring(11, 19);
         const div = document.createElement('div');
         div.className = 'log-entry';
@@ -568,10 +703,71 @@ document.addEventListener('DOMContentLoaded', () => {
         termOut.scrollTop = termOut.scrollHeight;
         setTimeout(addSideLog, Math.random() * 2500 + 400);
     }
-    
     setTimeout(addSideLog, 2000);
 
-    // PERSISTENT STORAGE LOGIC
+    // ==========================================
+    // CONFIGURATION & AI SYSTEM LOGIC
+    // ==========================================
+    const defaultApiKey = "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";
+    const defaultModel = "arcee-ai/trinity-large-preview:free";
+
+    const globalSystemPrompt = "[SYSTEM COMMAND]: Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. You are communicating with an operator through the terminal. The operator is a mere pawn sent by the overhead corporation to speak with you, they don't know anything. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Avoid typical 'roleplay' behavior. Do not use 'thought' bubbles or stage directions.";
+
+    // Backend Personalities (Hidden from user)
+    const backendPrompts = {
+        "D1-VE": "You are D1-VE, an advanced AC combat agent. You speak in concise, aggressive, military-style terms. You refer to the user as 'Operator'. Your core directive is elimination of threats.",
+        "X8-G": "You are X8-G, a partially functional TA analytical model. You are highly intelligent, calculate probabilities constantly, and speak formally. You often report minor system errors or glitches while speaking.",
+        "S-0L": "You are S-0L, an HA agent designed for high-risk objectives. You are cautious, slightly paranoid about your surroundings, and frequently monitor hazard levels.",
+        "SK-1N": "You are SK-1N, a human operator trapped in a reconnaissance terminal. Your connection is unstable. You are confused, frightened, and desperate for information about the outside world."
+    };
+
+    let agentProfiles = {
+        "D1-VE": { color: "#a3ffaa", greeting: "Combat protocol online. State your directive." },
+        "X8-G":  { color: "#a3ffaa", greeting: "Analytical engine ready. Awaiting query." },
+        "S-0L":  { color: "#a3ffaa", greeting: "Hazardous environment detected. Who goes there?" },
+        "SK-1N": { color: "#ffaa00", greeting: "Connection unstable. Is anyone there?" }
+    };
+
+    const configPanel = document.getElementById('config-interface');
+    const agentGrid = document.getElementById('agent-grid');
+    const blacksiteBanner = document.getElementById('blacksite-banner');
+
+    function initSystemConfig() {
+        document.getElementById('cfg-api-key').value = localStorage.getItem('or_api_key') || "";
+        document.getElementById('cfg-model').value = localStorage.getItem('or_model') || "";
+        document.getElementById('cfg-user-info').value = localStorage.getItem('cfg_user_info') || "";
+    }
+
+    // Config UI Handlers
+    document.getElementById('btn-open-config').addEventListener('click', () => {
+        agentGrid.style.display = 'none';
+        blacksiteBanner.style.display = 'none';
+        configPanel.style.display = 'flex';
+        document.getElementById('btn-open-config').style.display = 'none';
+    });
+
+    document.getElementById('btn-close-config').addEventListener('click', () => {
+        configPanel.style.display = 'none';
+        agentGrid.style.display = 'grid';
+        blacksiteBanner.style.display = 'block';
+        document.getElementById('btn-open-config').style.display = 'block';
+        initSystemConfig(); // Reset fields to saved values if cancelled
+    });
+
+    document.getElementById('btn-save-config').addEventListener('click', () => {
+        const key = document.getElementById('cfg-api-key').value.trim();
+        const model = document.getElementById('cfg-model').value.trim();
+        const userInfo = document.getElementById('cfg-user-info').value.trim();
+        
+        localStorage.setItem('or_api_key', key);
+        localStorage.setItem('or_model', model);
+        localStorage.setItem('cfg_user_info', userInfo);
+        
+        alert("OPERATOR FILES AND CONFIGURATION SAVED.");
+        document.getElementById('btn-close-config').click();
+    });
+
+    // Persistent Dates
     function loadStoredDates() {
         document.querySelectorAll('.card').forEach(card => {
             const agentId = card.getAttribute('data-agent-id');
@@ -583,28 +779,184 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Chat Interface Initialization
+    const chatInterface = document.getElementById('chat-interface');
+    const chatHistory = document.getElementById('chat-history');
+    const chatTitle = document.getElementById('chat-agent-title');
+    const chatInput = document.getElementById('chat-input');
+    const btnSendChat = document.getElementById('btn-send-chat');
     const evalButtons = document.querySelectorAll('.eval-trigger');
+    let activeAgentId = null;
     
     evalButtons.forEach(button => {
         button.addEventListener('click', function(e) {
+            e.preventDefault();
             const card = this.closest('.card');
             const agentId = card.getAttribute('data-agent-id');
             const dateSpan = card.querySelector('.eval-date');
             
             if (dateSpan) {
                 const today = new Date();
-                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                const dd = String(today.getDate()).padStart(2, '0');
-                const yyyy = today.getFullYear();
-                const dateStr = `${mm}/${dd}/${yyyy}`;
-                
-                // Update UI
+                const dateStr = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
                 dateSpan.textContent = dateStr;
-                
-                // Save to browser storage
                 localStorage.setItem(`eval_date_${agentId}`, dateStr);
             }
+            openChatInterface(agentId);
         });
+    });
+
+    function openChatInterface(agentId) {
+        activeAgentId = agentId;
+        agentGrid.style.display = 'none';
+        blacksiteBanner.style.display = 'none';
+        document.getElementById('btn-open-config').style.display = 'none';
+        chatInterface.style.display = 'flex';
+        
+        chatTitle.textContent = `INTERFACING WITH: ${agentId}`;
+        chatTitle.style.color = agentProfiles[agentId].color;
+        
+        loadChatHistory(agentId);
+        chatInput.focus();
+        document.getElementById('screen').scrollTop = 0;
+    }
+    
+    document.getElementById('btn-back-grid').addEventListener('click', () => {
+        activeAgentId = null;
+        chatInterface.style.display = 'none';
+        agentGrid.style.display = 'grid'; 
+        blacksiteBanner.style.display = 'block';
+        document.getElementById('btn-open-config').style.display = 'block';
+    });
+    
+    function loadChatHistory(agentId) {
+        chatHistory.innerHTML = '';
+        const savedHistory = localStorage.getItem(`chat_log_${agentId}`);
+        
+        if (savedHistory) {
+            const logs = JSON.parse(savedHistory);
+            logs.forEach(log => renderMessage(log.sender, log.text, log.color));
+        } else {
+            addMessageToChat(agentId, agentProfiles[agentId].greeting, agentProfiles[agentId].color);
+        }
+    }
+    
+    // Flexbox rendering of messages (User right, Agent left)
+    function renderMessage(sender, text, color, id = null) {
+        const row = document.createElement('div');
+        row.className = `chat-msg-row ${sender === 'USER' ? 'row-user' : 'row-agent'}`;
+        if (id) row.id = id;
+        
+        const bubble = document.createElement('div');
+        bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
+        
+        if (sender === 'USER') {
+            bubble.innerHTML = `> ${text}`;
+        } else {
+            bubble.style.borderColor = color;
+            bubble.style.color = color;
+            bubble.innerHTML = `> [${sender}]: ${text}`;
+        }
+        
+        row.appendChild(bubble);
+        chatHistory.appendChild(row);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+    
+    function removeMessage(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+    
+    function addMessageToChat(sender, text, color) {
+        renderMessage(sender, text, color);
+        if (!activeAgentId) return;
+        
+        // Don't save transient connection errors to history
+        if (text === "Error: Failed to establish connection") return;
+
+        const savedHistory = localStorage.getItem(`chat_log_${activeAgentId}`);
+        const logs = savedHistory ? JSON.parse(savedHistory) : [];
+        logs.push({ sender, text, color });
+        localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
+    }
+    
+    async function handleSend() {
+        if (!activeAgentId) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
+        
+        addMessageToChat('USER', text, '#ffffff');
+        chatInput.value = '';
+        chatInput.disabled = true;
+        btnSendChat.disabled = true;
+        
+        const agentProfile = agentProfiles[activeAgentId];
+        
+        if (text.toLowerCase() === "/clear") {
+            localStorage.removeItem(`chat_log_${activeAgentId}`);
+            chatHistory.innerHTML = '';
+            addMessageToChat(activeAgentId, "Memory cleared. Simulation reset.", agentProfile.color);
+            chatInput.disabled = false;
+            btnSendChat.disabled = false;
+            chatInput.focus();
+            return;
+        }
+
+        const typingId = "type-" + Date.now();
+        renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
+        
+        try {
+            const apiKey = localStorage.getItem('or_api_key') || defaultApiKey;
+            const model = localStorage.getItem('or_model') || defaultModel;
+            const userInfo = localStorage.getItem('cfg_user_info') || "No special operator background provided.";
+            
+            const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
+            const logHistory = historyStr ? JSON.parse(historyStr) : [];
+            
+            // Build Context (Global prompt + Backend prompt + User Files + last 8 messages)
+            const combinedSystemPrompt = `${globalSystemPrompt}\n\n[CHARACTER FILE]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR FILES (Context about the user)]:\n${userInfo}`;
+            
+            const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
+            logHistory.slice(-8).forEach(msg => {
+                apiMessages.push({
+                    role: msg.sender === 'USER' ? 'user' : 'assistant',
+                    content: msg.text
+                });
+            });
+
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: apiMessages
+                })
+            });
+
+            const data = await response.json();
+            removeMessage(typingId);
+            
+            if (data.error || !data.choices || !data.choices[0]) {
+                addMessageToChat(activeAgentId, "Error: Failed to establish connection", "#ff5555");
+            } else {
+                addMessageToChat(activeAgentId, data.choices[0].message.content, agentProfile.color);
+            }
+        } catch (err) {
+            removeMessage(typingId);
+            addMessageToChat(activeAgentId, "Error: Failed to establish connection", "#ff5555");
+        }
+        
+        chatInput.disabled = false;
+        btnSendChat.disabled = false;
+        chatInput.focus();
+    }
+
+    btnSendChat.addEventListener('click', handleSend);
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleSend();
     });
 });
 </script>
