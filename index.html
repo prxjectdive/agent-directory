@@ -421,7 +421,7 @@
             
             <div id="main-content" style="display:none;">
                 <div class="header">
-                    <h1 class="mobile-title">[ PRXJECT DIVE ]</h1>
+                    <h1 class="mobile-title">[ PRXJECTDIVE ]</h1>
                     <pre class="ascii-art">
  ____  ____  _  _    _   ____  ___  ____  ____  __  _  _  ____ 
 (  _ \(  _ \( \/ )  ( ) (  __)/ __)(_  _)(  _ \(  )/ )( \(  __)
@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
         if (sender === 'USER') {
-            const opName = (localStorage.getItem('cfg_op_name') || 'OPERATOR').toUpperCase();
+            const opName = (localStorage.getItem('cfg_op_name') || 'Operator').toUpperCase();
             bubble.innerHTML = `> [${opName}]: ${text}`;
         } else {
             bubble.style.borderColor = color;
@@ -864,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const userApiKey = localStorage.getItem('or_api_key');
             const model = localStorage.getItem('or_model') || defaultModel;
-            const opNameRaw = localStorage.getItem('cfg_op_name') || "OPERATOR";
+            const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
             const userInfo = localStorage.getItem('cfg_user_info') || "No special operator background provided.";
             const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
             const logHistory = historyStr ? JSON.parse(historyStr) : [];
