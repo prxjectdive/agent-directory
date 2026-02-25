@@ -556,7 +556,6 @@
                     </div>
                     <div id="chat-history"></div>
                     <div class="chat-input-area">
-                        <span style="font-weight: bold; font-size: 1.2em;">></span>
                         <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
@@ -633,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = showMain;
         bootDiv.appendChild(btn);
         
-        const finalMsg = "PRESS ENTER OR CLICK HERE TO EXPLORE ";
+        const finalMsg = "> PRESS ENTER OR CLICK HERE TO EXPLORE ";
         for (let j = 0; j < finalMsg.length; j++) {
             btn.innerHTML += finalMsg[j];
             await new Promise(r => setTimeout(r, 15));
