@@ -1020,10 +1020,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const { env, KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
             env.allowLocalModels = false;
 
+            // Detection for Mobile or missing WebGPU
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const supportsWebGPU = 'gpu' in navigator;
+            
+            // Force WASM on mobile or if WebGPU is absent
+            const device = (isMobile || !supportsWebGPU) ? 'wasm' : 'webgpu';
+            const dtype = device === 'wasm' ? 'fp32' : 'q4'; // WASM usually handles fp32/q8 better for Kokoro ONNX
+            const eps = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
+
+            console.log(`TTS Initializing: device=${device}, dtype=${dtype}`);
+
             tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
-                dtype: 'q4',
-                device: 'webgpu',
-                execution_providers: ['webgpu', 'wasm'],
+                dtype: dtype,
+                device: device,
+                execution_providers: eps,
                 log_level: 3,
                 progress_callback: (info) => {
                     if (info.status === 'progress' && info.total) {
@@ -1086,7 +1097,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
                         
                         if (sanitized === "clear") {
-                            // User said exactly "Clear" - wipe the buffer
                             lastMoonshineText = "";
                             chatInput.value = "[ BUFFER PURGED ]";
                             setTimeout(() => {
@@ -1287,8 +1297,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pttBtn.addEventListener('mousedown', async () => {
         if (!isRadioEnabled) return;
         pttBtn.classList.add('active');
-        // Do NOT clear lastMoonshineText here; we want it to keep going across pauses
-        // unless they say "Clear" or click the button fresh while the input is empty.
         if (chatInput.value === "" || chatInput.value === "[ BUFFER PURGED ]") {
             lastMoonshineText = "";
         }
