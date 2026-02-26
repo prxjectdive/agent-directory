@@ -611,7 +611,7 @@
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
                     <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history.</div>
-                    <div class="chat-subtext">Radio Command: Say <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
+                    <div class="chat-subtext">Radio Command: Say<span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
                 </div>
 
                 <div class="footer" id="main-footer">
@@ -685,7 +685,7 @@ const agentProfiles = {
 };
 const backendPrompts = {
     "D1-VE": "You are D1-VE, an advanced AC model combat agent. You speak in concise, aggressive, military-style terms. You refer to the user as 'Operator'.",
-    "X8-G": "You are X8-G, a partially functional TA model analytical model. You calculate probabilities constantly, and speak formally. You often report minor system errors while speaking.",
+    "X8-G": "You are X8-G, a partially functional TA model analytical agent. You calculate probabilities constantly, and speak formally. You often report minor system errors while speaking.",
     "S-0L": "You are S-0L, an HA model agent designed for high-risk objectives. You are cautious and slightly paranoid.",
     "SK-1N": "You are SK-1N, a human operator trapped in a reconnaissance terminal. Your connection is unstable. You are confused and desperate."
 };
@@ -1017,6 +1017,7 @@ let moonshineTranscriber = null;
 let moonshineReady = null;
 let lastMoonshineText = "";   
 let globalMicStream = null; 
+let isPttActive = false; 
 
 radioOverlay.addEventListener('click', async (e) => {
     if (isRadioEnabled || radioOverlay.classList.contains('downloading')) return;
@@ -1047,10 +1048,7 @@ async function loadKokoro() {
     ttsReady = (async () => {
         const { env, KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
         env.allowLocalModels = false;
-
-        // Force webgpu for desktop, wasm fallback for mobile to prevent crashes
         const deviceType = isMobile ? 'wasm' : 'webgpu';
-
         tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
             dtype: 'q4',
             device: deviceType, 
@@ -1067,7 +1065,6 @@ async function loadKokoro() {
                 }
             }
         });
-
         try {
             const span = document.querySelector('.radio-overlay span');
             if (span) span.textContent = "[ WARMING UP ENGINE... ]";
@@ -1087,7 +1084,6 @@ async function loadMoonshine() {
                 try { globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } 
                 catch (e) { console.warn("Could not establish persistent mic stream:", e); }
             }
-
             const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
             let isResolved = false;
             const span = document.querySelector('.radio-overlay span');
@@ -1102,10 +1098,12 @@ async function loadMoonshine() {
                     if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
                 },
                 onTranscriptionUpdated(text) {
+                    if (!isPttActive) return; 
                     const combined = (lastMoonshineText + " " + text).trim();
                     chatInput.value = combined || "[ LISTENING... ]";
                 },
                 onTranscriptionCommitted(text) {
+                    if (!isPttActive) return; 
                     const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
                     if (sanitized === "clear") {
                         lastMoonshineText = "";
@@ -1124,9 +1122,13 @@ async function loadMoonshine() {
 
             if (typeof moonshineTranscriber.initialize === 'function') {
                 await moonshineTranscriber.initialize();
+                if (typeof moonshineTranscriber.stop === 'function') moonshineTranscriber.stop();
                 if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
             } else {
-                try { await moonshineTranscriber.start(); await moonshineTranscriber.stop(); } catch(e) {}
+                try { 
+                    await moonshineTranscriber.start(); 
+                    await moonshineTranscriber.stop(); 
+                } catch(e) { console.warn("Warm-up start/stop error:", e); }
                 if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
             }
         } catch (err) { reject(err); }
@@ -1150,46 +1152,36 @@ async function playTTS(text, voice = 'af_sky', speed = 1.25) {
     try {
         let cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
         if (!cleanText) return;
-
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') await audioContext.resume();
-
         const result = await tts.generate(cleanText, { voice });
         const buffer = audioContext.createBuffer(1, result.audio.length, result.sampling_rate);
         buffer.getChannelData(0).set(result.audio);
-
         const source = audioContext.createBufferSource();
         source.buffer = buffer;
         source.playbackRate.value = speed;
         source.detune.value = -350;
-
         const bandpass = audioContext.createBiquadFilter();
         bandpass.type = 'bandpass';
         bandpass.frequency.value = 1500;  
         bandpass.Q.value = 1.0;
-
         const highpass = audioContext.createBiquadFilter();
         highpass.type = 'highpass';
         highpass.frequency.value = 300;
-
         const lowpass = audioContext.createBiquadFilter();
         lowpass.type = 'lowpass';
         lowpass.frequency.value = 3500;
-
         const distortion = audioContext.createWaveShaper();
         distortion.curve = makeDistortionCurve(15);  
         distortion.oversample = '4x';
-
         const gain = audioContext.createGain();
         gain.gain.value = 1;
-
         source.connect(bandpass);
         bandpass.connect(highpass);
         highpass.connect(lowpass);
         lowpass.connect(distortion);
         distortion.connect(gain);
         gain.connect(audioContext.destination);
-
         source.start();
     } catch (e) {
         console.error("TTS Playback Error:", e);
@@ -1199,16 +1191,24 @@ async function playTTS(text, voice = 'af_sky', speed = 1.25) {
 // Push-To-Talk Events
 pttBtn.addEventListener('mousedown', async () => {
     if (!isRadioEnabled) return;
+    
+    // START BLANK / WITH FILLER
+    isPttActive = true;
+    lastMoonshineText = ""; 
+    chatInput.value = "[ LISTENING... ]";
     pttBtn.classList.add('active');
-    if (chatInput.value === "" || chatInput.value === "[ BUFFER PURGED ]") lastMoonshineText = "";
+
     try {
         const transcriber = await loadMoonshine();
+        // Force reset the internal buffer to prevent "pre-roll" text
+        if (typeof transcriber.reset === 'function') transcriber.reset();
         await transcriber.start();
     } catch (e) { console.error('Moonshine start error:', e); }
 });
 
 const handlePttRelease = () => {
     if (pttBtn.classList.contains('active')) {
+        isPttActive = false;
         pttBtn.classList.remove('active');
         if (moonshineTranscriber) moonshineTranscriber.stop();
         
@@ -1217,7 +1217,7 @@ const handlePttRelease = () => {
             if (val && val !== "[ LISTENING... ]" && val !== "[ BUFFER PURGED ]") {
                 handleSend();
             } else if (val === "[ LISTENING... ]") {
-                chatInput.value = lastMoonshineText;
+                chatInput.value = ""; // Don't send filler text
             }
         }, 800);
     }
@@ -1228,10 +1228,15 @@ window.addEventListener('mouseup', handlePttRelease);
 pttBtn.addEventListener('touchstart', async (e) => {
     e.preventDefault();
     if (!isRadioEnabled) return;
+    
+    isPttActive = true;
+    lastMoonshineText = "";
+    chatInput.value = "[ LISTENING... ]";
     pttBtn.classList.add('active');
-    if (chatInput.value === "" || chatInput.value === "[ BUFFER PURGED ]") lastMoonshineText = "";
+
     try {
         const transcriber = await loadMoonshine();
+        if (typeof transcriber.reset === 'function') transcriber.reset();
         await transcriber.start();
     } catch (e) { console.error('Moonshine start error (touch):', e); }
 });
