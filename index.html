@@ -714,7 +714,7 @@
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
                     <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history.</div>
-                    <div class="chat-subtext">Voice Command: <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
+                    <div class="chat-subtext">Radio Command: <span style="color: #aaa;">"Clear"</span> to reset current message buffer. (Radio is unavailable on mobile.)</div>
                 </div>
 
                 <div class="footer">
@@ -1230,7 +1230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (text.toLowerCase() === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
             chatHistory.innerHTML = '';
-            addMessageToChat("SYS", "Simulation reset.", "#ff5555");
             addMessageToChat(activeAgentId, agentProfile.greeting, agentProfile.color);
             chatInput.disabled = false;
             btnSendChat.disabled = false;
