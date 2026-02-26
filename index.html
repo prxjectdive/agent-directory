@@ -305,17 +305,16 @@
         .chat-header-top {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end; /* Changed from center to align text with the base of the module */
+            align-items: flex-end; 
             gap: 20px;
             margin-bottom: 15px;
         }
 
         .chat-status-area {
             flex: 1;
-            padding-top: 10px; /* Added padding to lower the text position */
+            padding-top: 10px; 
         }
 
-        /* Speaker & Square PTT Button styles */
         .comm-module {
             display: flex;
             align-items: center;
@@ -331,7 +330,7 @@
                 radial-gradient(circle at calc(100% - 8px) 8px, #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at 8px calc(100% - 8px), #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #000 2px, #333 3px, transparent 4px);
-            overflow: hidden; /* Contains the radio overlay */
+            overflow: hidden; 
         }
 
         .radio-overlay {
@@ -393,10 +392,6 @@
                 inset 0 1px 3px rgba(255,255,255,0.6),
                 inset 0 -1px 3px rgba(0,0,0,0.2),
                 0 2px 5px rgba(0,0,0,0.5);
-        }
-
-        .btn-ptt::before {
-            display: none;
         }
 
         .btn-ptt:active, .btn-ptt.active {
@@ -718,7 +713,7 @@
                         <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
-                    <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history.</div>
+                    <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history. Voice Command: <span style="color: #ffaa00;">"Clear"</span> to reset current message buffer.</div>
                 </div>
 
                 <div class="footer">
@@ -1011,77 +1006,221 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
     }
 
-    // TTS Logic Setup
-    let synthesizer = null;
+    let tts = null;
+    let ttsReady = null; 
     let isRadioEnabled = false;
     let audioContext = null;
 
     const radioOverlay = document.getElementById('radio-overlay');
-    radioOverlay.addEventListener('click', async () => {
-        if (isRadioEnabled || radioOverlay.classList.contains('downloading')) return;
-        
-        radioOverlay.querySelector('span').textContent = "[ ESTABLISHING CONNECTION... ]";
-        radioOverlay.classList.add('downloading');
-        
-        try {
-            const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2');
+
+    async function loadKokoro() {
+        if (ttsReady) return ttsReady;  
+
+        ttsReady = (async () => {
+            const { env, KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
             env.allowLocalModels = false;
-            
-            synthesizer = await pipeline('text-to-speech', 'onnx-community/Kokoro-82M-v1.0-ONNX', {
-                dtype: 'q8',
+
+            tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
+                dtype: 'q4',
+                device: 'webgpu',
+                execution_providers: ['webgpu', 'wasm'],
+                log_level: 3,
                 progress_callback: (info) => {
                     if (info.status === 'progress' && info.total) {
                         const percent = Math.round((info.loaded / info.total) * 100);
-                        if (!isNaN(percent)) {
-                            radioOverlay.querySelector('span').textContent = `[ ESTABLISHING CONNECTION...  ]`;
-                        }
+                        radioOverlay.querySelector('span').textContent =
+                            `[ DOWNLOADING... ${percent}% ]`;
                     } else if (info.status === 'ready') {
                         radioOverlay.querySelector('span').textContent = "[ INITIALIZING VOICE... ]";
                     }
                 }
             });
-            
-            isRadioEnabled = true;
-            radioOverlay.classList.add('hidden');
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            addMessageToChat('SYS', 'Radio initialized. Speech module online.', '#a3ffaa');
-        } catch (e) {
-            console.error("TTS Init Error:", e);
-            radioOverlay.querySelector('span').textContent = "[ ERROR. CLICK TO RETRY ]";
-            radioOverlay.classList.remove('downloading');
-        }
+
+            return tts;
+        })();
+
+        return ttsReady;
+    }
+
+    let moonshineTranscriber = null;
+    let moonshineReady = null;
+    let lastMoonshineText = "";   
+    let globalMicStream = null;   
+
+    async function loadMoonshine() {
+        if (moonshineReady) return moonshineReady;
+
+        moonshineReady = (async () => {
+            if (!globalMicStream) {
+                try {
+                    globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch (e) {
+                    console.warn("Could not establish persistent mic stream:", e);
+                }
+            }
+
+            const Moonshine = await import(
+                'https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js'
+            );
+
+            moonshineTranscriber = new Moonshine.MicrophoneTranscriber(
+                "model/base",
+                {
+                    onPermissionsRequested() {
+                        console.log("Moonshine: requesting mic permission…");
+                    },
+                    onPermissionsGranted() {
+                        console.log("Moonshine: mic granted");
+                    },
+                    onPermissionsDenied() {
+                        console.warn("Moonshine: mic denied");
+                    },
+                    onModelLoadStarted() {
+                        console.log("Moonshine: model load started");
+                    },
+                    onTranscriptionUpdated(text) {
+                        const combined = (lastMoonshineText + " " + text).trim();
+                        chatInput.value = combined || "[ LISTENING... ]";
+                    },
+                    onTranscriptionCommitted(text) {
+                        const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
+                        
+                        if (sanitized === "clear") {
+                            // User said exactly "Clear" - wipe the buffer
+                            lastMoonshineText = "";
+                            chatInput.value = "[ BUFFER PURGED ]";
+                            setTimeout(() => {
+                                if (chatInput.value === "[ BUFFER PURGED ]") chatInput.value = "";
+                            }, 800);
+                            return;
+                        }
+
+                        if (text.trim()) {
+                            lastMoonshineText = (lastMoonshineText + " " + text).trim();
+                            chatInput.value = lastMoonshineText;
+                        }
+                    },
+                },
+                false
+            );
+
+            return moonshineTranscriber;
+        })();
+
+        return moonshineReady;
+    }
+
+    radioOverlay.addEventListener('click', async () => {
+        if (isRadioEnabled || radioOverlay.classList.contains('downloading')) return;
+
+        radioOverlay.querySelector('span').textContent = "[ ESTABLISHING CONNECTION... ]";
+        radioOverlay.classList.add('downloading');
+
+            try {
+                const kokoroPromise = loadKokoro();
+                const moonshinePromise = loadMoonshine();
+
+                await Promise.all([kokoroPromise, moonshinePromise]);
+
+                isRadioEnabled = true;
+                radioOverlay.classList.add('hidden');
+
+                if (!audioContext)
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                addMessageToChat('SYS', 'Radio initialized. Speech + transcription online.', '#a3ffaa');
+            } catch (e) {
+                console.error("Init Error (Kokoro/Moonshine):", e);
+                radioOverlay.querySelector('span').textContent = "[ ERROR. CLICK TO RETRY ]";
+                radioOverlay.classList.remove('downloading');
+                ttsReady = null;
+                moonshineReady = null;
+            }
     });
 
-    async function playTTS(text, voice) {
-        if (!synthesizer || !isRadioEnabled) return;
+
+    function makeDistortionCurve(amount = 20) {
+        const n_samples = 44100;
+        const curve = new Float32Array(n_samples);
+        const deg = Math.PI / 180;
+
+        for (let i = 0; i < n_samples; ++i) {
+            const x = (i * 2) / n_samples - 1;
+            curve[i] = ((3 + amount) * x * 20 * deg) /
+                       (Math.PI + amount * Math.abs(x));
+        }
+
+        return curve;
+    }
+
+
+    async function playTTS(text, voice = 'af_sky', speed = 1.25) {  
+        if (!isRadioEnabled || !tts) {
+            console.warn('TTS not initialized');
+            return;
+        }
         try {
-            // Remove asterisk actions and bracket tags to make the TTS sound more natural
             let cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
             if (!cleanText) return;
 
-            // Ensure AudioContext is ready before generating
-            if (audioContext && audioContext.state === 'suspended') {
+            if (!audioContext)
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
 
-            const out = await synthesizer(cleanText, { voice: voice });
-            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            const buffer = audioContext.createBuffer(1, out.audio.length, out.sampling_rate);
-            buffer.getChannelData(0).set(out.audio);
+            const result = await tts.generate(cleanText, { voice });
+
+            const buffer = audioContext.createBuffer(1, result.audio.length, result.sampling_rate);
+            buffer.getChannelData(0).set(result.audio);
+
             const source = audioContext.createBufferSource();
             source.buffer = buffer;
-            source.connect(audioContext.destination);
+            source.playbackRate.value = speed;
+            source.detune.value = -350;
+
+            const bandpass = audioContext.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 1500;  
+            bandpass.Q.value = 1.0;
+
+            const highpass = audioContext.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 300;
+
+            const lowpass = audioContext.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = 3500;
+
+            const distortion = audioContext.createWaveShaper();
+            distortion.curve = makeDistortionCurve(15);  
+            distortion.oversample = '4x';
+
+            const gain = audioContext.createGain();
+            gain.gain.value = 1;
+
+            source.connect(bandpass);
+            bandpass.connect(highpass);
+            highpass.connect(lowpass);
+            lowpass.connect(distortion);
+            distortion.connect(gain);
+            gain.connect(audioContext.destination);
+
             source.start();
         } catch (e) {
             console.error("TTS Playback Error:", e);
         }
     }
-    
+
+
     async function handleSend() {
         if (!activeAgentId) return;
         const text = chatInput.value.trim();
-        if (!text) return;
+        if (!text || text === "[ LISTENING... ]" || text === "[ BUFFER PURGED ]") return;
+
+        lastMoonshineText = "";
+
         addMessageToChat('USER', text, '#ffffff');
         chatInput.value = '';
         chatInput.disabled = true;
@@ -1130,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const responseText = data.choices[0].message.content;
                 addMessageToChat(activeAgentId, responseText, agentProfile.color);
-                playTTS(responseText, agentProfile.voice);
+                playTTS(responseText, agentProfile.voice, 1.25);
             }
         } catch (err) {
             removeMessage(typingId);
@@ -1143,13 +1282,67 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSendChat.addEventListener('click', handleSend);
     chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
-    // PTT Logic
     const pttBtn = document.getElementById('btn-ptt');
-    pttBtn.addEventListener('mousedown', () => pttBtn.classList.add('active'));
-    window.addEventListener('mouseup', () => pttBtn.classList.remove('active'));
-    pttBtn.addEventListener('touchstart', (e) => { e.preventDefault(); pttBtn.classList.add('active'); });
-    pttBtn.addEventListener('touchend', () => pttBtn.classList.remove('active'));
+
+    pttBtn.addEventListener('mousedown', async () => {
+        if (!isRadioEnabled) return;
+        pttBtn.classList.add('active');
+        // Do NOT clear lastMoonshineText here; we want it to keep going across pauses
+        // unless they say "Clear" or click the button fresh while the input is empty.
+        if (chatInput.value === "" || chatInput.value === "[ BUFFER PURGED ]") {
+            lastMoonshineText = "";
+        }
+        
+        try {
+            const transcriber = await loadMoonshine();
+            await transcriber.start();
+        } catch (e) {
+            console.error('Moonshine start error:', e);
+        }
+    });
+
+    const handlePttRelease = () => {
+        if (pttBtn.classList.contains('active')) {
+            pttBtn.classList.remove('active');
+            if (moonshineTranscriber) {
+                moonshineTranscriber.stop();
+            }
+            
+            setTimeout(() => {
+                const val = chatInput.value.trim();
+                if (val && val !== "[ LISTENING... ]" && val !== "[ BUFFER PURGED ]") {
+                    handleSend();
+                } else if (val === "[ LISTENING... ]") {
+                    chatInput.value = lastMoonshineText;
+                }
+            }, 800);
+        }
+    };
+
+    window.addEventListener('mouseup', handlePttRelease);
+
+    pttBtn.addEventListener('touchstart', async (e) => {
+        e.preventDefault();
+        if (!isRadioEnabled) return;
+        pttBtn.classList.add('active');
+        if (chatInput.value === "" || chatInput.value === "[ BUFFER PURGED ]") {
+            lastMoonshineText = "";
+        }
+
+        try {
+            const transcriber = await loadMoonshine();
+            await transcriber.start();
+        } catch (e) {
+            console.error('Moonshine start error (touch):', e);
+        }
+    });
+
+    pttBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handlePttRelease();
+    });
 });
+
 </script>
 
 </body>
