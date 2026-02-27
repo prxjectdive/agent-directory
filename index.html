@@ -369,6 +369,41 @@
         /* =========================================
            RADIO & AUDIO MODULE
            ========================================= */
+        .radio-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            position: relative;
+        }
+
+        .mute-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2px;
+            margin-right: 4px;
+        }
+
+        #mute-status-text {
+            font-size: 0.75em;
+            color: #666;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        #mute-status-text.enabled {
+            color: #a3ffaa;
+            text-shadow: 0 0 5px rgba(163, 255, 170, 0.4);
+        }
+
+        #mute-status-text.muted {
+            color: #ff5555;
+            text-shadow: 0 0 5px rgba(255, 85, 85, 0.4);
+        }
+
         .comm-module {
             display: flex; align-items: center; gap: 15px; padding: 12px 20px;
             background-color: #121212; border: 1px solid #000; border-radius: 8px;
@@ -379,22 +414,13 @@
                 radial-gradient(circle at calc(100% - 8px) 8px, #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at 8px calc(100% - 8px), #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #000 2px, #333 3px, transparent 4px);
+            opacity: 0.4;
+            transition: opacity 0.5s;
         }
-
-        .radio-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 10, 0.85); z-index: 10;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: opacity 0.3s ease; backdrop-filter: blur(2px);
+        
+        .comm-module.active {
+            opacity: 1;
         }
-        .radio-overlay span {
-            color: #ffffff; font-size: 0.8em; font-weight: bold; text-align: center;
-            pointer-events: none; text-shadow: 0 0 5px rgba(255, 170, 0, 0.5); animation: pulse 2s infinite;
-        }
-        .radio-overlay.downloading span {
-            color: #ffffff; text-shadow: 0 0 5px rgba(163, 255, 170, 0.5); animation: blink 1s step-end infinite;
-        }
-        .radio-overlay.hidden { opacity: 0; pointer-events: none; }
 
         .speaker-grill {
             width: 130px; height: 50px; background-color: #1a1a1a;
@@ -405,13 +431,28 @@
 
         .btn-ptt {
             width: 50px; height: 50px; display: block; border: 1px solid #000;
-            background: #d4d4d4; cursor: pointer; transition: all 0.1s ease;
+            background: #444; cursor: not-allowed; transition: all 0.1s ease;
             padding: 0; border-radius: 2px;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.5);
+        }
+        
+        .comm-module.active .btn-ptt {
+            background: #d4d4d4; cursor: pointer;
             box-shadow: inset 0 1px 3px rgba(255,255,255,0.6), inset 0 -1px 3px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.5);
         }
+
         .btn-ptt:active, .btn-ptt.active {
-            background: #ffaa00; border-color: #ffaa00; color: transparent; transform: scale(0.96);
-            box-shadow: inset 0 1px 5px rgba(0,0,0,0.3), 0 0 20px 5px rgba(255, 102, 0, 0.7), 0 0 10px 2px rgba(255, 150, 0, 0.5);
+            background: #ffaa00 !important; border-color: #ffaa00; color: transparent; transform: scale(0.96);
+            box-shadow: inset 0 1px 5px rgba(0,0,0,0.3), 0 0 20px 5px rgba(255, 102, 0, 0.7), 0 0 10px 2px rgba(255, 150, 0, 0.5) !important;
+        }
+        
+        .btn-ptt.muted {
+            background: #551111 !important;
+            border-color: #ff5555;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255, 85, 85, 0.6) !important;
+            pointer-events: none; 
+            cursor: not-allowed;
+            opacity: 0.85;
         }
 
         /* =========================================
@@ -512,7 +553,7 @@
                             <div class="data-row"><span>Performance:</span> <span>+17.4%</span></div>
                             <div class="data-row"><span>Compliance Rate:</span> <span>98.6%</span></div>
                             <div class="data-row"><span>Last Evaluation:</span> <span class="eval-date">--/--/----</span></div>
-                            <div class="data-row"><span>Next Milestone</span> <span class="eval-date">Field Simulation</span></div>
+                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Field Simulations</span></div>
                         </div>
                         <div class="card-footer">
                             <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
@@ -531,7 +572,7 @@
                             <div class="data-row"><span>Performance:</span> <span>−42.7%</span></div>
                             <div class="data-row"><span>Compliance Rate:</span> <span>57.3%</span></div>
                             <div class="data-row"><span>Last Evaluation:</span> <span class="eval-date">--/--/----</span></div>
-                            <div class="data-row"><span>Next Milestone</span> <span class="eval-date">Postponed</span></div>
+                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Postponed</span></div>
                         </div>
                         <div class="card-footer">
                             <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
@@ -550,7 +591,7 @@
                             <div class="data-row"><span>Performance:</span> <span>-9.1%</span></div>
                             <div class="data-row"><span>Compliance Rate:</span> <span>92.6%</span></div>
                             <div class="data-row"><span>Last Evaluation:</span> <span class="eval-date">--/--/----</span></div>
-                            <div class="data-row"><span>Next Milestone</span> <span class="eval-date">Re-calibration</span></div>
+                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Re-calibration</span></div>
                         </div>
                         <div class="card-footer">
                             <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
@@ -569,7 +610,7 @@
                             <div class="data-row"><span>Performance:</span> <span>ERROR</span></div>
                             <div class="data-row"><span>Compliance Rate:</span> <span>ERROR</span></div>
                             <div class="data-row"><span>Last Evaluation:</span> <span class="eval-date">--/--/----</span></div>
-                            <div class="data-row"><span>Next Milestone</span> <span class="eval-date">ERROR</span></div>
+                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Null</span></div>
                         </div>
                         <div class="card-footer">
                             <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
@@ -595,12 +636,16 @@
                             <div class="chat-status-area">
                                 <h2 id="chat-agent-title">INTERFACING WITH: </h2>
                             </div>
-                            <div class="comm-module" id="comm-module">
-                                <div id="radio-overlay" class="radio-overlay">
-                                    <span>[ ENABLE RADIO ]</span>
+                            <!-- RADIO MODULE WRAPPER -->
+                            <div class="radio-wrapper">
+                                <div class="mute-switch-wrapper">
+                                    <span id="mute-status-text">COMMS LINK: SLEEP</span>
                                 </div>
-                                <div class="speaker-grill"></div>
-                                <button id="btn-ptt" class="btn-ptt" title="Push To Talk"></button>
+                                
+                                <div class="comm-module" id="comm-module">
+                                    <div class="speaker-grill"></div>
+                                    <button id="btn-ptt" class="btn-ptt" title="Push To Talk"></button>
+                                </div>
                             </div>
                         </div>
                         <hr>
@@ -610,8 +655,8 @@
                         <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
-                    <div class="chat-subtext">SYSTEM NOTE: Type <span style="color: #aaa;">/clear</span> to purge chat history.</div>
-                    <div class="chat-subtext">Radio Command: Say <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
+                    <div class="chat-subtext">SYSTEM COMMANDS: Type <span style="color: #aaa;">/clear</span> to purge history. Type <span style="color: #aaa;">/comms link enable</span> or <span style="color: #aaa;">/comms link disable</span> to enable or disable comms.</div>
+                    <div class="chat-subtext">COMMS COMMANDS: Say <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
                 </div>
 
                 <div class="footer" id="main-footer">
@@ -626,7 +671,7 @@
 
 <div id="side-terminal">
     <div class="crt-overlays"></div>
-    <div class="terminal-header">BACKGROUND PROCESSES // DAEMON ACTIVE</div>
+    <div class="terminal-header">ACTION LOG // DAEMON ACTIVE</div>
     <div id="terminal-output"></div>
 </div>
 
@@ -669,8 +714,9 @@ const chatTitle = document.getElementById('chat-agent-title');
 const chatInput = document.getElementById('chat-input');
 const btnSendChat = document.getElementById('btn-send-chat');
 const btnBackGrid = document.getElementById('btn-back-grid');
-const radioOverlay = document.getElementById('radio-overlay');
 const pttBtn = document.getElementById('btn-ptt');
+const commModule = document.getElementById('comm-module');
+const muteStatusText = document.getElementById('mute-status-text');
 
 // Agent & LLM Constants
 const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
@@ -689,6 +735,20 @@ const backendPrompts = {
     "S-0L": "You are S-0L, an HA model agent designed for high-risk objectives. You are cautious and slightly paranoid.",
     "SK-1N": "You are SK-1N, a human operator trapped in a reconnaissance terminal. Your connection is unstable. You are confused and desperate."
 };
+
+// ============================================================================
+// SYSTEM LOGGING FUNCTION
+// ============================================================================
+function sysLog(message, type = "sys") {
+    const time = new Date().toISOString().substring(11, 19);
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${message}</span>`;
+    
+    termOut.appendChild(div);
+    if (termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
+    termOut.scrollTop = termOut.scrollHeight;
+}
 
 // ============================================================================
 // BOOT & INITIALIZATION LOGIC
@@ -753,38 +813,8 @@ function showMain() {
     screenEl.scrollTop = 0;
     loadStoredDates(); 
     initSystemConfig(); 
-}
-
-// ============================================================================
-// SIDE TERMINAL LOGS
-// ============================================================================
-const sideLogs = [
-    { type: "sys", msg: "Scanning network interfaces..." },
-    { type: "sys", msg: "Validating checksum cache..." },
-    { type: "warn", msg: "Packet loss detected on undefined node" },
-    { type: "err", msg: "Connection timed out to secure sector" },
-    { type: "sys", msg: "Allocating memory for simulation environments" },
-    { type: "warn", msg: "Thermal limits approaching threshold" },
-    { type: "sys", msg: "Establishing secure handshake with Local_Host" },
-    { type: "warn", msg: "Unrecognized biosignature detected near perimeter" },
-    { type: "sys", msg: "Mounting neural-drive partitions..." },
-    { type: "err", msg: "Agent desynchronization. Recalibrating..." },
-    { type: "sys", msg: "Agent diagnostics: Nominal" },
-    { type: "warn", msg: "Hydraulic pressure exceeding parameters" },
-    { type: "err", msg: "Memory block corrupted. Recovery protocol active" }
-];
-
-function addSideLog() {
-    const entry = sideLogs[Math.floor(Math.random() * sideLogs.length)];
-    const time = new Date().toISOString().substring(11, 19);
-    const div = document.createElement('div');
-    div.className = 'log-entry';
-    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${entry.type}">${entry.msg}</span>`;
-    
-    termOut.appendChild(div);
-    if (termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
-    termOut.scrollTop = termOut.scrollHeight;
-    setTimeout(addSideLog, Math.random() * 2500 + 400);
+    sysLog("SYSTEM BOOT COMPLETE.", "sys");
+    sysLog("Operator logged in to central terminal.", "warn");
 }
 
 // ============================================================================
@@ -798,6 +828,7 @@ function initSystemConfig() {
 }
 
 btnOpenConfig.addEventListener('click', () => {
+    sysLog("Operator accessed System Configuration.");
     agentGrid.style.display = 'none';
     blacksiteBanner.style.display = 'none';
     configPanel.style.display = 'flex';
@@ -805,6 +836,7 @@ btnOpenConfig.addEventListener('click', () => {
 });
 
 btnCloseConfig.addEventListener('click', () => {
+    sysLog("Operator closed System Configuration.");
     configPanel.style.display = 'none';
     agentGrid.style.display = 'grid';
     blacksiteBanner.style.display = 'block';
@@ -817,6 +849,7 @@ btnSaveConfig.addEventListener('click', () => {
     localStorage.setItem('or_model', cfgModel.value.trim());
     localStorage.setItem('cfg_op_name', cfgOpName.value.trim());
     localStorage.setItem('cfg_user_info', cfgUserInfo.value.trim());
+    sysLog("Operator modified System Configuration settings.", "warn");
     btnCloseConfig.click();
 });
 
@@ -841,6 +874,8 @@ evalButtons.forEach(button => {
         const card = this.closest('.card');
         const agentId = card.getAttribute('data-agent-id');
         const dateSpan = card.querySelector('.eval-date');
+        
+        sysLog(`Operator initiated evaluation protocol for agent ${agentId}.`);
         
         if (dateSpan) {
             const today = new Date();
@@ -869,6 +904,7 @@ function openChatInterface(agentId) {
 }
 
 btnBackGrid.addEventListener('click', () => {
+    sysLog("Operator returned to main Agent Directory.");
     activeAgentId = null;
     chatInterface.style.display = 'none';
     mainHeader.style.display = 'block';
@@ -932,23 +968,38 @@ async function handleSend() {
     const text = chatInput.value.trim();
     if (!text || text === "[ LISTENING... ]" || text === "[ BUFFER PURGED ]") return;
 
+    // Handle Commands
+    if (text.startsWith("/")) {
+        const cmd = text.toLowerCase();
+        if (cmd === "/clear") {
+            localStorage.removeItem(`chat_log_${activeAgentId}`);
+            chatHistory.innerHTML = '';
+            addMessageToChat(activeAgentId, agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
+            sysLog(`Operator executed /clear command for ${activeAgentId}.`, "warn");
+            chatInput.value = "";
+            return;
+        }
+        if (cmd === "/comms link enable") {
+            chatInput.value = "";
+            handleRadioCommand(true);
+            return;
+        }
+        if (cmd === "/comms link disable") {
+            chatInput.value = "";
+            handleRadioCommand(false);
+            return;
+        }
+    }
+
     lastMoonshineText = "";
     addMessageToChat('USER', text, '#ffffff');
+    sysLog(`Operator sent transmission to Agent ${activeAgentId}.`);
     
     chatInput.value = '';
     chatInput.disabled = true;
     btnSendChat.disabled = true;
     
     const agentProfile = agentProfiles[activeAgentId];
-    
-    if (text.toLowerCase() === "/clear") {
-        localStorage.removeItem(`chat_log_${activeAgentId}`);
-        chatHistory.innerHTML = '';
-        addMessageToChat(activeAgentId, agentProfile.greeting, agentProfile.color);
-        chatInput.disabled = false;
-        btnSendChat.disabled = false;
-        return;
-    }
     
     const typingId = "type-" + Date.now();
     renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
@@ -964,7 +1015,7 @@ async function handleSend() {
         const combinedSystemPrompt = `${globalSystemPrompt}\n\n[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}`;
         const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
         
-        logHistory.slice(-8).forEach(msg => {
+        logHistory.slice(-200).forEach(msg => {
             apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: msg.text });
         });
         
@@ -988,14 +1039,17 @@ async function handleSend() {
         
         if (data.error || !data.choices || !data.choices[0]) {
             addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
+            sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
         } else {
             const responseText = data.choices[0].message.content;
             addMessageToChat(activeAgentId, responseText, agentProfile.color);
+            sysLog(`Agent ${activeAgentId} responded.`);
             playTTS(responseText, agentProfile.voice, 1.25);
         }
     } catch (err) {
         removeMessage(typingId);
         addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
+        sysLog(`Network error communicating with Agent ${activeAgentId}.`, "err");
     }
     
     chatInput.disabled = false;
@@ -1011,7 +1065,8 @@ chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend
 // ============================================================================
 let tts = null;
 let ttsReady = null; 
-let isRadioEnabled = false;
+let isRadioInitialized = false;
+let isMuted = true;
 let audioContext = null;
 let moonshineTranscriber = null;
 let moonshineReady = null;
@@ -1019,29 +1074,43 @@ let lastMoonshineText = "";
 let globalMicStream = null; 
 let isPttActive = false; 
 
-radioOverlay.addEventListener('click', async (e) => {
-    if (isRadioEnabled || radioOverlay.classList.contains('downloading')) return;
-
-    radioOverlay.classList.add('downloading');
-
-    try {
-        await loadMoonshine();
-        await loadKokoro();
-
-        isRadioEnabled = true;
-        radioOverlay.classList.add('hidden');
-
-        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        addMessageToChat('SYS', 'Radio initialized. Speech + transcription online.', '#a3ffaa');
-    } catch (err) {
-        console.error("Init Error (Kokoro/Moonshine):", err);
-        const span = radioOverlay.querySelector('span');
-        if (span) span.textContent = "[ ERROR. CLICK TO RETRY ]";
-        radioOverlay.classList.remove('downloading');
-        ttsReady = null;
-        moonshineReady = null;
+async function handleRadioCommand(enable) {
+    if (enable) {
+        if (!isRadioInitialized) {
+            sysLog("Operator established comms link.", "warn");
+            muteStatusText.textContent = "COMMS LINK: SYNCING...";
+            muteStatusText.classList.add('enabled');
+            muteStatusText.classList.remove('muted');
+            
+            try {
+                await loadMoonshine();
+                await loadKokoro();
+                
+                isRadioInitialized = true;
+                isMuted = false;
+                commModule.classList.add('active');
+                muteStatusText.textContent = "COMMS LINK: ENABLED";
+                sysLog("Comms link fully operational.", "sys");
+            } catch (err) {
+                console.error("Init Error:", err);
+                muteStatusText.textContent = "COMMS LINK: FAIL";
+                muteStatusText.classList.add('muted');
+            }
+        } else {
+            isMuted = false;
+            muteStatusText.textContent = "COMMS LINK: ENABLED";
+            muteStatusText.classList.remove('muted');
+            pttBtn.classList.remove('muted');
+            sysLog("Operator enabled comms link.");
+        }
+    } else {
+        isMuted = true;
+        muteStatusText.textContent = "COMMS LINK: DISABLED";
+        muteStatusText.classList.add('muted');
+        pttBtn.classList.add('muted');
+        sysLog("Operator disabled comms link.", "warn");
     }
-});
+}
 
 async function loadKokoro() {
     if (ttsReady) return ttsReady;  
@@ -1055,22 +1124,17 @@ async function loadKokoro() {
             execution_providers: ['webgpu', 'wasm'],
             log_level: 3,
             progress_callback: (info) => {
-                const span = document.querySelector('.radio-overlay span');
-                if (!span) return;
                 if (info.status === 'progress' && info.total) {
                     const percent = Math.round((info.loaded / info.total) * 100);
-                    span.textContent = `[ STARTING ENGINE... ${percent}% ]`;
+                    muteStatusText.textContent = `COMMS LINK: SYNC ${percent}%`;
                 } else if (info.status === 'ready') {
-                    span.textContent = "[ INITIALIZING ENGINE... ]";
+                    muteStatusText.textContent = "COMMS LINK: INIT...";
                 }
             }
         });
         try {
-            const span = document.querySelector('.radio-overlay span');
-            if (span) span.textContent = "[ WARMING UP ENGINE... ]";
             await tts.generate("a", { voice: 'am_onyx' });
-        } catch (e) { console.warn("Warmup failed:", e); }
-
+        } catch (e) { console.warn("Warmup error"); }
         return tts;
     })();
     return ttsReady;
@@ -1082,28 +1146,26 @@ async function loadMoonshine() {
         try {
             if (!globalMicStream) {
                 try { globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } 
-                catch (e) { console.warn("Could not establish persistent mic stream:", e); }
+                catch (e) { console.warn("Mic error"); }
             }
             const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
             let isResolved = false;
-            const span = document.querySelector('.radio-overlay span');
-            if (span) span.textContent = "[ INITIALIZING ENGINE... ]";
 
             moonshineTranscriber = new Moonshine.MicrophoneTranscriber("model/base", {
                 onPermissionsRequested() { },
                 onPermissionsGranted() { },
-                onPermissionsDenied() { console.warn("Moonshine: mic denied"); },
-                onModelLoadStarted() { if (span) span.textContent = "[ STARTING ENGINE... ]"; },
+                onPermissionsDenied() { },
+                onModelLoadStarted() { muteStatusText.textContent = "[ SYNCING COMMS... ]"; },
                 onModelLoadComplete() {
                     if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
                 },
                 onTranscriptionUpdated(text) {
-                    if (!isPttActive) return; 
+                    if (!isPttActive || isMuted) return; 
                     const combined = (lastMoonshineText + " " + text).trim();
                     chatInput.value = combined || "[ LISTENING... ]";
                 },
                 onTranscriptionCommitted(text) {
-                    if (!isPttActive) return; 
+                    if (!isPttActive || isMuted) return; 
                     const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
                     if (sanitized === "clear") {
                         lastMoonshineText = "";
@@ -1118,8 +1180,6 @@ async function loadMoonshine() {
                 },
             }, false);
 
-            if (span) span.textContent = "[ WARMING UP ENGINE... ]";
-
             if (typeof moonshineTranscriber.initialize === 'function') {
                 await moonshineTranscriber.initialize();
                 if (typeof moonshineTranscriber.stop === 'function') moonshineTranscriber.stop();
@@ -1128,7 +1188,7 @@ async function loadMoonshine() {
                 try { 
                     await moonshineTranscriber.start(); 
                     await moonshineTranscriber.stop(); 
-                } catch(e) { console.warn("Warm-up start/stop error:", e); }
+                } catch(e) {}
                 if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
             }
         } catch (err) { reject(err); }
@@ -1148,7 +1208,7 @@ function makeDistortionCurve(amount = 20) {
 }
 
 async function playTTS(text, voice = 'af_sky', speed = 1.25) {  
-    if (!isRadioEnabled || !tts) return;
+    if (!isRadioInitialized || !tts || isMuted) return; 
     try {
         let cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
         if (!cleanText) return;
@@ -1183,27 +1243,27 @@ async function playTTS(text, voice = 'af_sky', speed = 1.25) {
         distortion.connect(gain);
         gain.connect(audioContext.destination);
         source.start();
+        sysLog(`Agent initiated voice transmission.`);
     } catch (e) {
-        console.error("TTS Playback Error:", e);
+        console.error("Voice Playback Error:", e);
     }
 }
 
 // Push-To-Talk Events
 pttBtn.addEventListener('mousedown', async () => {
-    if (!isRadioEnabled) return;
+    if (!isRadioInitialized || isMuted) return; 
     
-    // START BLANK / WITH FILLER
     isPttActive = true;
     lastMoonshineText = ""; 
     chatInput.value = "[ LISTENING... ]";
     pttBtn.classList.add('active');
+    sysLog("Operator initiated voice transmission.");
 
     try {
         const transcriber = await loadMoonshine();
-        // Force reset the internal buffer to prevent "pre-roll" text
         if (typeof transcriber.reset === 'function') transcriber.reset();
         await transcriber.start();
-    } catch (e) { console.error('Moonshine start error:', e); }
+    } catch (e) {}
 });
 
 const handlePttRelease = () => {
@@ -1217,7 +1277,7 @@ const handlePttRelease = () => {
             if (val && val !== "[ LISTENING... ]" && val !== "[ BUFFER PURGED ]") {
                 handleSend();
             } else if (val === "[ LISTENING... ]") {
-                chatInput.value = ""; // Don't send filler text
+                chatInput.value = ""; 
             }
         }, 800);
     }
@@ -1226,29 +1286,30 @@ const handlePttRelease = () => {
 window.addEventListener('mouseup', handlePttRelease);
 
 pttBtn.addEventListener('touchstart', async (e) => {
+    if (!isRadioInitialized || isMuted) return;
     e.preventDefault();
-    if (!isRadioEnabled) return;
     
     isPttActive = true;
     lastMoonshineText = "";
     chatInput.value = "[ LISTENING... ]";
     pttBtn.classList.add('active');
+    sysLog("Operator initiated voice transmission.");
 
     try {
         const transcriber = await loadMoonshine();
         if (typeof transcriber.reset === 'function') transcriber.reset();
         await transcriber.start();
-    } catch (e) { console.error('Moonshine start error (touch):', e); }
+    } catch (e) {}
 });
 
 pttBtn.addEventListener('touchend', (e) => {
+    if (!isRadioInitialized || isMuted) return;
     e.preventDefault();
     handlePttRelease();
 });
 
 // START
 setTimeout(runBoot, 500);
-setTimeout(addSideLog, 2000);
 
 </script>
 </body>
