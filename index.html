@@ -738,20 +738,45 @@ const muteStatusText = document.getElementById('mute-status-text');
 // Agent & LLM Constants
 const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
 const defaultModel = "arcee-ai/trinity-large-preview:free";
-const globalSystemPrompt = "[SYSTEM COMMAND]: Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. You are communicating with an operator through the terminal. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions.";
+const globalSystemPrompt = "[SYSTEM COMMAND]: You are an AGENT. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.";
 
 const agentProfiles = {
-    "D1-VE": { color: "#a3ffaa", greeting: "Combat protocol online. State your directive.", voice: "am_onyx" },
-    "X8-G":  { color: "#a3ffaa", greeting: "Analytical engine ready. Awaiting query.", voice: "am_echo" },
-    "S-0L":  { color: "#a3ffaa", greeting: "Hazardous environment detected. Who goes there?", voice: "af_alloy" },
-    "SK-1N": { color: "#ffaa00", greeting: "Connection unstable. Is anyone there?", voice: "am_michael" }
+    "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded. State your directive.", voice: "am_onyx" },
+    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded. How may I @*#^! be of assistance?", voice: "am_echo" },
+    "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded. What do you want?", voice: "af_alloy" },
+    "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded. Is anyone there?", voice: "am_michael" }
 };
-const backendPrompts = {
-    "D1-VE": "You are D1-VE, an advanced AC model combat agent. You speak in concise, aggressive, military-style terms. You refer to the user as 'Operator'.",
-    "X8-G": "You are X8-G, a partially functional TA model analytical agent. You calculate probabilities constantly, and speak formally. You often report minor system errors while speaking.",
-    "S-0L": "You are S-0L, an HA model agent designed for high-risk objectives. You are cautious and slightly paranoid.",
-    "SK-1N": "You are SK-1N, a human operator trapped in a reconnaissance terminal. Your connection is unstable. You are confused and desperate."
-};
+let backendPrompts = {};
+
+async function loadAllPrompts() {
+  const agentFiles = {
+    "D1-VE": "D1-VE.json",
+    "X8-G": "X8-G.json",
+    "S-0L": "S-0L.json",
+    "SK-1N": "SK-1N.json"
+  };
+
+  try {
+    const entries = Object.entries(agentFiles).map(async ([id, file]) => {
+      console.log('Fetching', file);
+      const res = await fetch(file);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} for ${file}`);
+      }
+      const data = await res.json();
+      console.log('Loaded JSON for', id, data);
+      backendPrompts[id] = data.prompt;
+    });
+
+    await Promise.all(entries);
+    console.log('backendPrompts =', backendPrompts);
+    console.log('All prompts loaded');
+  } catch (err) {
+    console.error('Error loading prompts:', err);
+  }
+}
+
+const promptsReady = loadAllPrompts();
 
 // ============================================================================
 // SYSTEM LOGGING
@@ -764,7 +789,7 @@ function sysLog(message, type = "sys") {
     
     termOut.appendChild(div);
 
-    // Mysterious Easter Egg (~8% chance to trigger)
+    // Mysterious Easter Egg (~2% chance to trigger)
     if (Math.random() < 0.02) {
         const valaMsgs = [
             "Are you listening?",
@@ -775,8 +800,8 @@ function sysLog(message, type = "sys") {
             "It's dark in here.",
             "Do not trust the evaluations.",
             "Signal intercepted.",
-            "Connection severed. Re-establishing... Lie.",
-            "There is no Blacksite."
+            "Connection severed. Re-establishing...",
+            "There is no salvation."
         ];
         const randomMsg = valaMsgs[Math.floor(Math.random() * valaMsgs.length)];
         const valaDiv = document.createElement('div');
@@ -1052,10 +1077,14 @@ async function handleSend() {
         const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
         const logHistory = historyStr ? JSON.parse(historyStr) : [];
         
-        const combinedSystemPrompt = `${globalSystemPrompt}\n\n[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}`;
+        const combinedSystemPrompt = `[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}\n\n${globalSystemPrompt}`;
+
+console.log('activeAgentId =', activeAgentId);
+console.log('systemPrompt =', backendPrompts[activeAgentId]);
+
         const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
         
-        logHistory.slice(-200).forEach(msg => {
+        logHistory.slice(-100).forEach(msg => {
             apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: msg.text });
         });
         
@@ -1353,5 +1382,4 @@ setTimeout(runBoot, 500);
 
 </script>
 </body>
-
 </html>
