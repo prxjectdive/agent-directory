@@ -746,6 +746,8 @@ const agentProfiles = {
     "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded. What do you want?", voice: "af_alloy" },
     "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded. Is anyone there?", voice: "am_michael" }
 };
+
+
 let backendPrompts = {};
 
 async function loadAllPrompts() {
@@ -758,24 +760,22 @@ async function loadAllPrompts() {
 
   try {
     const entries = Object.entries(agentFiles).map(async ([id, file]) => {
-      console.log('Fetching', file);
       const res = await fetch(file);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status} for ${file}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${file}`);
       const data = await res.json();
-      console.log('Loaded JSON for', id, data);
       backendPrompts[id] = data.prompt;
-    });
+  });
+  await Promise.all(entries);
 
-    await Promise.all(entries);
-    console.log('backendPrompts =', backendPrompts);
-    console.log('All prompts loaded');
+  const lorebookRes = await fetch("lorebook.json");
+  if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
+  window.lorebook = await lorebookRes.json();
+  console.log("Lorebook loaded:", window.lorebook);
+
   } catch (err) {
-    console.error('Error loading prompts:', err);
+      console.error(`Error loading prompts:`, err);
   }
 }
-
 const promptsReady = loadAllPrompts();
 
 // ============================================================================
@@ -1089,7 +1089,13 @@ async function handleSend() {
         const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
         const logHistory = historyStr ? JSON.parse(historyStr) : [];
         
-        const combinedSystemPrompt = `[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}\n\n${globalSystemPrompt}`;
+        const scanText = (logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase();
+        const matchedLore = (window.lorebook || [])
+            .filter(entry => entry.keywords.some(kw => scanText.includes(kw.toLowerCase())))
+            .map(entry => entry.content)
+            .join("\n\n");
+        const loreSection = matchedLore ? `\n\n[WORLD LORE]:\n${matchedLore}` : "";
+        const combinedSystemPrompt = `[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}\n\n[LORE]: ${loreSection}\n${globalSystemPrompt}$`;
 
 console.log('activeAgentId =', activeAgentId);
 console.log('systemPrompt =', backendPrompts[activeAgentId]);
