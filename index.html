@@ -672,7 +672,7 @@
                         <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                         <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                     </div>
-                    <div class="chat-subtext">SYSTEM COMMANDS: Type <span style="color: #aaa;">/clear</span> to purge history. Type <span style="color: #aaa;">/comms link enable</span> or <span style="color: #aaa;">/comms link disable</span> to enable or disable comms.</div>
+                    <div class="chat-subtext">SYSTEM COMMANDS: Type <span style="color: #aaa;">/clear</span> to purge history. Type <span style="color: #aaa;">/comms link enable</span> or <span style="color: #aaa;">/comms link disable</span> to enable or disable comms. Type <span style="color: #aaa;">/back</span> to revert the most recent message.</div>
                     <div class="chat-subtext">COMMS COMMANDS: Say <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
                 </div>
 
@@ -742,7 +742,7 @@ const globalSystemPrompt = "[SYSTEM COMMAND]: You are an AGENT. Your mind has be
 
 const agentProfiles = {
     "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded. State your directive.", voice: "am_onyx" },
-    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded. How may I @*#^! be of assistance?", voice: "am_echo" },
+    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded. How may I be of assistance?", voice: "am_echo" },
     "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded. What do you want?", voice: "af_alloy" },
     "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded. Is anyone there?", voice: "am_michael" }
 };
@@ -1033,27 +1033,39 @@ async function handleSend() {
     const text = chatInput.value.trim();
     if (!text || text === "[ LISTENING... ]" || text === "[ BUFFER PURGED ]") return;
 
-    // Handle Commands
+    // Command interceptor
     if (text.startsWith("/")) {
         const cmd = text.toLowerCase();
+        chatInput.value = ""; // Clear input for all commands
+        
         if (cmd === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
             chatHistory.innerHTML = '';
             addMessageToChat(activeAgentId, agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
-            sysLog(`Operator executed /clear command for ${activeAgentId}.`, "warn");
-            chatInput.value = "";
+            sysLog(`History purged for unit ${activeAgentId}.`, "sys");
             return;
         }
-        if (cmd === "/comms link enable") {
-            chatInput.value = "";
-            handleRadioCommand(true);
+        
+        if (cmd === "/back") {
+            const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+            // Check logs.length > 1 to ensure we don't delete the initial system greeting (index 0)
+            if (logs.length > 1) {
+                const removed = logs.pop(); // Remove only the latest single message
+                localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
+                loadChatHistory(activeAgentId);
+                sysLog(`Removed latest message from ${removed.sender}.`, "sys");
+            } else {
+                sysLog("History is at baseline. Cannot revert further.", "warn");
+            }
             return;
         }
-        if (cmd === "/comms link disable") {
-            chatInput.value = "";
-            handleRadioCommand(false);
-            return;
-        }
+
+        if (cmd === "/comms link enable") { handleRadioCommand(true); return; }
+        if (cmd === "/comms link disable") { handleRadioCommand(false); return; }
+        
+        // If it starts with / but isn't handled above
+        sysLog(`INVALID COMMAND: ${text}`, "err");
+        return; 
     }
 
     lastMoonshineText = "";
