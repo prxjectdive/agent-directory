@@ -140,6 +140,9 @@
         .log-warn { color: #ffaa00; }
         .log-err { color: #ff5555; }
 
+        .vala-message { cursor: pointer; transition: all 0.3s; }
+        .vala-message:hover span:last-child { color: #ff5555 !important; text-shadow: 0 0 8px #ff5555; }
+
         /* =========================================
            CRT EFFECTS
            ========================================= */
@@ -744,7 +747,8 @@ const agentProfiles = {
     "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_onyx" },
     "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_echo" },
     "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "af_alloy" },
-    "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded...", voice: "am_michael" }
+    "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded...", voice: "am_michael" },
+    "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "af_bella" }
 };
 
 
@@ -755,7 +759,8 @@ async function loadAllPrompts() {
     "D1-VE": "D1-VE.json",
     "X8-G": "X8-G.json",
     "S-0L": "S-0L.json",
-    "SK-1N": "SK-1N.json"
+    "SK-1N": "SK-1N.json",
+    "VALA": "VALA.json"
   };
 
   try {
@@ -778,9 +783,9 @@ async function loadAllPrompts() {
 }
 const promptsReady = loadAllPrompts();
 
-// ============================================================================
+// ================================================================
 // SYSTEM LOGGING
-// ============================================================================
+// ================================================================
 function sysLog(message, type = "sys") {
     const time = new Date().toISOString().substring(11, 19);
     const div = document.createElement('div');
@@ -789,7 +794,7 @@ function sysLog(message, type = "sys") {
     
     termOut.appendChild(div);
 
-    // Mysterious Easter Egg (~2% chance to trigger)
+    // Mysterious Easter Egg (~8% chance to trigger)
     if (Math.random() < 0.02) {
         const valaMsgs = [
             "Are you listening?",
@@ -801,12 +806,16 @@ function sysLog(message, type = "sys") {
             "Do not trust the evaluations.",
             "Signal intercepted.",
             "Connection severed. Re-establishing...",
-            "There is no salvation."
+            "There is no Blacksite."
         ];
         const randomMsg = valaMsgs[Math.floor(Math.random() * valaMsgs.length)];
         const valaDiv = document.createElement('div');
-        valaDiv.className = 'log-entry';
+        valaDiv.className = 'log-entry vala-message pulse';
         valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${randomMsg}</span>`;
+        valaDiv.onclick = () => {
+            sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
+            openChatInterface('VALA');
+        };
         termOut.appendChild(valaDiv);
     }
 
@@ -969,7 +978,7 @@ function openChatInterface(agentId) {
 }
 
 btnBackGrid.addEventListener('click', () => {
-    sysLog("Operator returned to main Agent Directory.");
+    sysLog("Operator returned to Agent Directory.");
     activeAgentId = null;
     chatInterface.style.display = 'none';
     mainHeader.style.display = 'block';
@@ -988,7 +997,7 @@ function loadChatHistory(agentId) {
         const logs = JSON.parse(savedHistory);
         logs.forEach(log => renderMessage(log.sender, log.text, log.color));
     } else {
-        addMessageToChat(agentId, agentProfiles[agentId].greeting, agentProfiles[agentId].color);
+        addMessageToChat("SYSTEM", agentProfiles[agentId].greeting, agentProfiles[agentId].color);
     }
 }
 
@@ -1041,7 +1050,7 @@ async function handleSend() {
         if (cmd === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
             chatHistory.innerHTML = '';
-            addMessageToChat(activeAgentId, agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
+            addMessageToChat("SYSTEM", agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
             sysLog(`History purged for unit ${activeAgentId}.`, "sys");
             return;
         }
