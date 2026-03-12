@@ -534,14 +534,18 @@
 
                 <!-- CONFIGURATION PANEL -->
                 <div id="config-interface">
-                    <h2 style="color: #ffaa00;">> OPERATOR CONFIGURATION</h2>
+                    <h2 style="color: #ffaa00;">> SYSTEM CONFIGURATION</h2>
                     <div class="config-group">
-                        <label>OpenRouter API Key:</label>
+                        <label>API Endpoint / Proxy URL:</label>
+                        <input type="text" id="cfg-proxy-url" class="config-input" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                    </div>
+                    <div class="config-group">
+                        <label>API Key (Optional):</label>
                         <input type="password" id="cfg-api-key" class="config-input" placeholder="sk-or-v1-...">
                     </div>
                     <div class="config-group">
                         <label>AI Model:</label>
-                        <input type="text" id="cfg-model" class="config-input" placeholder="openai/gp...">
+                        <input type="text" id="cfg-model" class="config-input" placeholder="stepfun/step-3.5-flash:free">
                     </div>
                     <hr style="margin: 15px 0; border-top: 1px dotted #444;">
                     <h3 style="font-size: 1em; color: #a3ffaa;">> OPERATOR FILES:</h3>
@@ -717,6 +721,7 @@ const configPanel = document.getElementById('config-interface');
 const btnOpenConfig = document.getElementById('btn-open-config');
 const btnCloseConfig = document.getElementById('btn-close-config');
 const btnSaveConfig = document.getElementById('btn-save-config');
+const cfgProxyUrl = document.getElementById('cfg-proxy-url');
 const cfgApiKey = document.getElementById('cfg-api-key');
 const cfgModel = document.getElementById('cfg-model');
 const cfgOpName = document.getElementById('cfg-op-name');
@@ -741,7 +746,7 @@ const muteStatusText = document.getElementById('mute-status-text');
 // Agent & LLM Constants
 const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
 const defaultModel = "stepfun/step-3.5-flash:free";
-const globalSystemPrompt = "[SYSTEM COMMAND]: You are an AGENT. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. Anything can happen in this simulation. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.";
+
 
 const agentProfiles = {
     "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_onyx" },
@@ -787,7 +792,12 @@ const promptsReady = loadAllPrompts();
 // SYSTEM LOGGING
 // ================================================================
 function sysLog(message, type = "sys") {
-    const time = new Date().toISOString().substring(11, 19);
+    const now = new Date();
+    const time = [
+        String(now.getHours()).padStart(2, '0'),
+        String(now.getMinutes()).padStart(2, '0'),
+        String(now.getSeconds()).padStart(2, '0')
+    ].join(':');
     const div = document.createElement('div');
     div.className = 'log-entry';
     div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${message}</span>`;
@@ -888,13 +898,14 @@ function showMain() {
     loadStoredDates(); 
     initSystemConfig(); 
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
-    sysLog("Operator logged in to central terminal.", "warn");
+    sysLog("Operator logged in to agent directory.", "warn");
 }
 
 // ============================================================================
 // CONFIGURATION LOGIC
 // ============================================================================
 function initSystemConfig() {
+    cfgProxyUrl.value = localStorage.getItem('or_proxy_url') || "";
     cfgApiKey.value = localStorage.getItem('or_api_key') || "";
     cfgModel.value = localStorage.getItem('or_model') || "";
     cfgOpName.value = localStorage.getItem('cfg_op_name') || "";
@@ -919,6 +930,7 @@ btnCloseConfig.addEventListener('click', () => {
 });
 
 btnSaveConfig.addEventListener('click', () => {
+    localStorage.setItem('or_proxy_url', cfgProxyUrl.value.trim());
     localStorage.setItem('or_api_key', cfgApiKey.value.trim());
     localStorage.setItem('or_model', cfgModel.value.trim());
     localStorage.setItem('cfg_op_name', cfgOpName.value.trim());
@@ -1028,6 +1040,7 @@ function addMessageToChat(sender, text, color) {
     if (!activeAgentId) return;
     const savedHistory = localStorage.getItem(`chat_log_${activeAgentId}`);
     const logs = savedHistory ? JSON.parse(savedHistory) : [];
+    const timestamp = new Date().toISOString();
     logs.push({ sender, text, color });
     localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
 }
@@ -1092,11 +1105,15 @@ async function handleSend() {
     
     try {
         const userApiKey = localStorage.getItem('or_api_key');
+        const customProxyUrl = localStorage.getItem('or_proxy_url');
         const model = localStorage.getItem('or_model') || defaultModel;
         const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
         const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
         const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
         const logHistory = historyStr ? JSON.parse(historyStr) : [];
+        const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
+
+                   const globalSystemPrompt = `[SYSTEM COMMAND]: You are ${activeAgentId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. Anything can happen in this simulation. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.`;
         
         const scanText = (logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase();
         const matchedLore = (window.lorebook || [])
@@ -1104,35 +1121,41 @@ async function handleSend() {
             .map(entry => entry.content)
             .join("\n\n");
         const loreSection = matchedLore ? `\n\n[WORLD LORE]:\n${matchedLore}` : "";
-        const combinedSystemPrompt = `[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}\n\n[LORE]: ${loreSection}\n${globalSystemPrompt}$`;
+        const combinedSystemPrompt = `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n${globalSystemPrompt}$`;
 
 console.log('activeAgentId =', activeAgentId);
 console.log('systemPrompt =', backendPrompts[activeAgentId]);
 
         const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
         
-        logHistory.slice(-100).forEach(msg => {
-            apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: msg.text });
+        logHistory.slice(-200).forEach(msg => {
+            let contentText = msg.text;
+            if (msg.timestamp) {
+                const d = new Date(msg.timestamp);
+                const timeStr = [
+                    String(d.getHours()).padStart(2, '0'),
+                    String(d.getMinutes()).padStart(2, '0'),
+                    String(d.getSeconds()).padStart(2, '0')
+                ].join(':');
+                contentText = `[${timeStr}] ${contentText}`;
+            }
+            apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: contentText });
         });
         
-        // Set model temperature here
+        // Set your model temperature here
 
         const modelTemp = 0.8;
 
         let response;
-        if (userApiKey) {
-            response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${userApiKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
-            });
-        } else {
-            response = await fetch(defaultProxyUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
-            });
-        }
+        const endpoint = customProxyUrl || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
+        const headers = { "Content-Type": "application/json" };
+        if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+
+        response = await fetch(endpoint, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
+        });
         
         const data = await response.json();
         removeMessage(typingId);
