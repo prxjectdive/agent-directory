@@ -1115,18 +1115,22 @@ console.log('systemPrompt =', backendPrompts[activeAgentId]);
             apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: msg.text });
         });
         
+        // Set model temperature here
+
+        const modelTemp = 0.8;
+
         let response;
         if (userApiKey) {
             response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${userApiKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ model: model, messages: apiMessages })
+                body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
             });
         } else {
             response = await fetch(defaultProxyUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model: model, messages: apiMessages })
+                body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
             });
         }
         
