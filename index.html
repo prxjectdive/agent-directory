@@ -1118,7 +1118,7 @@ async function handleSend() {
     if (!activeAgentId) return;
     const linkedAgentId = getLinkedAgent();
     const text = chatInput.value.trim();
-    if (!text || text === "[ LISTENING... ]" || text === "[ BUFFER PURGED ]") return;
+    if (!text || text === "[ BUFFER PURGED ]") return;
 
     // Command interceptor
     if (text.startsWith("/")) {
@@ -1608,9 +1608,19 @@ let isMuted = true;
 let audioContext = null;
 let moonshineTranscriber = null;
 let moonshineReady = null;
+let moonshineModelLoaded = false;
 let lastMoonshineText = "";   
-let globalMicStream = null; 
 let isPttActive = false; 
+
+let activeMicStream = null;
+
+// Intercept getUserMedia so we can track and stop the stream ourselves
+const _originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+navigator.mediaDevices.getUserMedia = async function(constraints) {
+    const stream = await _originalGetUserMedia(constraints);
+    if (constraints && constraints.audio) activeMicStream = stream;
+    return stream;
+};
 
 async function handleRadioCommand(enable) {
     if (enable) {
@@ -1680,52 +1690,8 @@ async function loadMoonshine() {
     if (moonshineReady) return moonshineReady;
     moonshineReady = new Promise(async (resolve, reject) => {
         try {
-            if (!globalMicStream) {
-                try { globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) {}
-            }
             const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
-            let isResolved = false;
-
-            moonshineTranscriber = new Moonshine.MicrophoneTranscriber("model/base", {
-                onPermissionsRequested() { },
-                onPermissionsGranted() { },
-                onPermissionsDenied() { },
-                onModelLoadStarted() { muteStatusText.textContent = "[ SYNCING COMMS... ]"; },
-                onModelLoadComplete() {
-                    if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
-                },
-                onTranscriptionUpdated(text) {
-                    if (!isPttActive || isMuted) return; 
-                    const combined = (lastMoonshineText + " " + text).trim();
-                    chatInput.value = combined || "[ LISTENING... ]";
-                },
-                onTranscriptionCommitted(text) {
-                    if (!isPttActive || isMuted) return; 
-                    const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
-                    if (sanitized === "clear") {
-                        lastMoonshineText = "";
-                        chatInput.value = "[ BUFFER PURGED ]";
-                        setTimeout(() => { if (chatInput.value === "[ BUFFER PURGED ]") chatInput.value = ""; }, 800);
-                        return;
-                    }
-                    if (text.trim()) {
-                        lastMoonshineText = (lastMoonshineText + " " + text).trim();
-                        chatInput.value = lastMoonshineText;
-                    }
-                },
-            }, false);
-
-            if (typeof moonshineTranscriber.initialize === 'function') {
-                await moonshineTranscriber.initialize();
-                if (typeof moonshineTranscriber.stop === 'function') moonshineTranscriber.stop();
-                if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
-            } else {
-                try { 
-                    await moonshineTranscriber.start(); 
-                    await moonshineTranscriber.stop(); 
-                } catch(e) {}
-                if (!isResolved) { isResolved = true; resolve(moonshineTranscriber); }
-            }
+            resolve(Moonshine);
         } catch (err) { reject(err); }
     });
     return moonshineReady;
@@ -1823,15 +1789,48 @@ async function processTTSQueue() {
 // Push-To-Talk Events
 async function handlePttStart() {
     if (!isRadioInitialized || isMuted) return;
+
     isPttActive = true;
     lastMoonshineText = "";
-    chatInput.value = "[ LISTENING... ]";
+    chatInput.value = ""; chatInput.placeholder = "[ LISTENING... ]";
     pttBtn.classList.add('active');
     sysLog("Operator initiated voice transmission.");
+
     try {
-        const transcriber = await loadMoonshine();
-        if (typeof transcriber.reset === 'function') transcriber.reset();
-        await transcriber.start();
+        const Moonshine = await loadMoonshine();
+
+        if (!moonshineTranscriber) {
+            const modelAlreadyLoaded = moonshineModelLoaded;
+            moonshineTranscriber = new Moonshine.MicrophoneTranscriber("model/base", {
+                onPermissionsRequested() { },
+                onPermissionsGranted() { },
+                onPermissionsDenied() { isPttActive = false; pttBtn.classList.remove('active'); chatInput.value = ""; },
+                onModelLoadStarted() { },
+                onModelLoadComplete() { moonshineModelLoaded = true; if (!isMuted) muteStatusText.textContent = "COMMS: ENABLED"; },
+                onTranscriptionUpdated(text) {
+                    if (!isPttActive || isMuted) return;
+                    chatInput.value = (lastMoonshineText + " " + text).trim(); if (!chatInput.value) chatInput.placeholder = "[ LISTENING... ]"; else chatInput.placeholder = "ENTER COMMAND OR MESSAGE...";
+                },
+                onTranscriptionCommitted(text) {
+                    if (!isPttActive || isMuted) return;
+                    const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
+                    if (sanitized === "clear") {
+                        lastMoonshineText = "";
+                        chatInput.value = "[ BUFFER PURGED ]";
+                        setTimeout(() => { if (chatInput.value === "[ BUFFER PURGED ]") chatInput.value = ""; }, 800);
+                        return;
+                    }
+                    if (text.trim()) {
+                        lastMoonshineText = (lastMoonshineText + " " + text).trim();
+                        chatInput.value = lastMoonshineText;
+                    }
+                },
+            }, false);
+        }
+
+        if (typeof moonshineTranscriber.reset === 'function') moonshineTranscriber.reset();
+        await moonshineTranscriber.start();
+        if (moonshineModelLoaded && !isMuted) muteStatusText.textContent = "COMMS: ENABLED";
     } catch (e) {}
 }
 
@@ -1842,14 +1841,20 @@ const handlePttRelease = () => {
     if (pttBtn.classList.contains('active')) {
         isPttActive = false;
         pttBtn.classList.remove('active');
-        if (moonshineTranscriber) moonshineTranscriber.stop();
+        if (moonshineTranscriber) {
+            moonshineTranscriber.stop();
+            moonshineTranscriber = null;
+        }
+        if (activeMicStream) {
+            activeMicStream.getTracks().forEach(t => t.stop());
+            activeMicStream = null;
+        }
         
         setTimeout(() => {
+            chatInput.placeholder = "ENTER COMMAND OR MESSAGE...";
             const val = chatInput.value.trim();
-            if (val && val !== "[ LISTENING... ]" && val !== "[ BUFFER PURGED ]") {
+            if (val && val !== "[ BUFFER PURGED ]") {
                 handleSend();
-            } else if (val === "[ LISTENING... ]") {
-                chatInput.value = ""; 
             }
         }, 800);
     }
