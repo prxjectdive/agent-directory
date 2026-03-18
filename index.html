@@ -1014,11 +1014,14 @@ function sysLog(message, type = "sys") {
                     valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${msg}</span>`;
                     valaDiv.onclick = () => {
                         sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
+                        closeLogDrawer();
                         openChatInterface('VALA');
                     };
                     if (targetEntry && targetEntry.parentNode === termOut) termOut.replaceChild(valaDiv, targetEntry);
                     else termOut.appendChild(valaDiv);
-                    if (targetDrawerEntry && targetDrawerEntry.parentNode === logDrawerOutput) logDrawerOutput.replaceChild(valaDiv.cloneNode(true), targetDrawerEntry);
+                    const drawerClone = valaDiv.cloneNode(true);
+                    drawerClone.onclick = valaDiv.onclick;
+                    if (targetDrawerEntry && targetDrawerEntry.parentNode === logDrawerOutput) logDrawerOutput.replaceChild(drawerClone, targetDrawerEntry);
                     termOut.scrollTop = termOut.scrollHeight;
 
                     // Matrix scramble animation on the message text
@@ -1831,6 +1834,7 @@ async function handleRadioCommand(enable) {
                 isMuted = false;
                 commModule.classList.add('active');
                 muteStatusText.textContent = "COMMS: ENABLED";
+                pttBtn.classList.remove('muted');
                 sysLog("Comms link fully operational.", "sys");
                 addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
             } catch (err) {
@@ -1850,7 +1854,21 @@ async function handleRadioCommand(enable) {
         stopTTS();
         muteStatusText.textContent = "COMMS: DISABLED";
         muteStatusText.classList.add('muted');
+        muteStatusText.classList.remove('enabled');
         pttBtn.classList.add('muted');
+        commModule.classList.remove('active');
+
+        // Unload TTS worker
+        if (ttsWorker) { ttsWorker.terminate(); ttsWorker = null; }
+        ttsReady = null;
+        isRadioInitialized = false;
+
+        // Unload Moonshine
+        if (moonshineTranscriber) { try { moonshineTranscriber.stop(); } catch(e) {} moonshineTranscriber = null; }
+        if (activeMicStream) { activeMicStream.getTracks().forEach(t => t.stop()); activeMicStream = null; }
+        moonshineReady = null;
+        moonshineModelLoaded = false;
+
         sysLog("Operator disabled comms.", "warn");
         addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
     }
