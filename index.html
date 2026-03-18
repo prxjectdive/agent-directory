@@ -830,7 +830,6 @@ async function loadAllPrompts() {
         if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
         window.lorebook = await lorebookRes.json();
     } catch (err) {
-        console.error("Error loading prompts:", err);
     }
 }
 loadAllPrompts();
@@ -1252,13 +1251,11 @@ async function handleSend() {
     const apiMessages = [{ role: "system", content: combinedSystemPrompt }, ...buildApiMsgsFromLog(logHistory.slice(-200), activeAgentId)];
     const modelTemp = 0.8;
 
-    console.group(`[SEND] ${activeAgentId} — operator message`);
-    console.log('Agent ID:', activeAgentId);
-    console.log('Linked agent:', linkedAgentId || 'none');
-    console.log('JSON prompt:', backendPrompts[activeAgentId]);
+    console.group(`[SEND] ${activeAgentId}`);
     console.log('System prompt:', combinedSystemPrompt);
     console.log('Messages:', apiMessages);
     console.groupEnd();
+
 
     let responseText;
     try {
@@ -1284,12 +1281,11 @@ async function handleSend() {
         const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
         const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
 
-        console.group(`[OPERATOR MSG] Linked agent ${linkedAgentId} responds`);
-        console.log('Agent ID:', linkedAgentId);
-        console.log('JSON prompt:', backendPrompts[linkedAgentId]);
+        console.group(`[OPERATOR MSG] ${linkedAgentId}`);
         console.log('System prompt:', linkedSysPrompt);
         console.log('Messages:', linkedApiMessages);
         console.groupEnd();
+
 
         const linkedTypingId = "lnk-op-" + Date.now();
         renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
@@ -1541,12 +1537,11 @@ async function handleLink() {
     const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const linkedApiMsgs = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
 
-    console.group(`[LINK] Step 1 — ${linkedAgentId} speaks`);
-    console.log('Agent ID:', linkedAgentId);
-    console.log('JSON prompt:', backendPrompts[linkedAgentId]);
+    console.group(`[LINK] Step 1 — ${linkedAgentId}`);
     console.log('System prompt:', linkedSysPrompt);
     console.log('Messages:', linkedApiMsgs);
     console.groupEnd();
+
 
     const linkedTypingId = "lnk-t-" + Date.now();
     renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
@@ -1574,12 +1569,11 @@ async function handleLink() {
     const activeSysPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, buildLore(activeLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const activeApiMsgs = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
 
-    console.group(`[LINK] Step 2 — ${activeAgentId} responds`);
-    console.log('Agent ID:', activeAgentId);
-    console.log('JSON prompt:', backendPrompts[activeAgentId]);
+    console.group(`[LINK] Step 2 — ${activeAgentId}`);
     console.log('System prompt:', activeSysPrompt);
     console.log('Messages:', activeApiMsgs);
     console.groupEnd();
+
 
     const activeTypingId = "act-t-" + Date.now();
     renderMessage(activeAgentId, "Establishing connection...", agentProfiles[activeAgentId].color, activeTypingId);
@@ -1608,8 +1602,7 @@ async function handleLink() {
 // ============================================================================
 // AUDIO, RADIO & AI MODELS (TTS/STT)
 // ============================================================================
-let tts = null;
-let ttsReady = null; 
+let ttsReady = null;
 let isRadioInitialized = false;
 let isMuted = true;
 let audioContext = null;
@@ -1637,7 +1630,6 @@ async function handleRadioCommand(enable) {
                 muteStatusText.textContent = "COMMS: ENABLED";
                 sysLog("Comms link fully operational.", "sys");
             } catch (err) {
-                console.error("Init Error:", err);
                 muteStatusText.textContent = "COMMS: FAIL";
                 muteStatusText.classList.add('muted');
             }
@@ -1658,31 +1650,29 @@ async function handleRadioCommand(enable) {
     }
 }
 
+let ttsWorker = null;
+
 async function loadKokoro() {
-    if (ttsReady) return ttsReady;  
-    ttsReady = (async () => {
-        const { env, KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
-        env.allowLocalModels = false;
-        const deviceType = isMobile ? 'wasm' : 'webgpu';
-        tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
-            dtype: 'q4',
-            device: deviceType, 
-            execution_providers: ['webgpu', 'wasm'],
-            log_level: 3,
-            progress_callback: (info) => {
-                if (info.status === 'progress' && info.total) {
-                    const percent = Math.round((info.loaded / info.total) * 100);
-                    muteStatusText.textContent = `COMMS: SYNC ${percent}%`;
-                } else if (info.status === 'ready') {
-                    muteStatusText.textContent = "COMMS: INIT...";
-                }
+    if (ttsReady) return ttsReady;
+    ttsReady = new Promise((resolve, reject) => {
+        ttsWorker = new Worker('tts-worker.js');
+        ttsWorker.onmessage = ({ data }) => {
+            if (data.type === 'progress') {
+                muteStatusText.textContent = `COMMS: SYNC ${data.percent}%`;
+            } else if (data.type === 'init_status') {
+                muteStatusText.textContent = data.text;
+            } else if (data.type === 'ready') {
+                resolve(ttsWorker);
+            } else if (data.type === 'error') {
+                reject(new Error(data.message));
+            } else if (data.type === 'audio') {
+                // Dispatch generated audio back to the queue processor
+                ttsWorker.dispatchEvent(new MessageEvent('audio', { data }));
             }
-        });
-        try {
-            await tts.generate("a", { voice: 'am_onyx' });
-        } catch (e) { console.warn("Warmup error"); }
-        return tts;
-    })();
+        };
+        ttsWorker.onerror = (e) => reject(e);
+        ttsWorker.postMessage({ type: 'init', isMobile });
+    });
     return ttsReady;
 }
 
@@ -1691,8 +1681,7 @@ async function loadMoonshine() {
     moonshineReady = new Promise(async (resolve, reject) => {
         try {
             if (!globalMicStream) {
-                try { globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } 
-                catch (e) { console.warn("Mic error"); }
+                try { globalMicStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) {}
             }
             const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
             let isResolved = false;
@@ -1759,15 +1748,15 @@ let ttsCurrentSource = null;
 
 function stopTTS() {
     ttsQueue = [];
+    ttsPlaying = false;
     if (ttsCurrentSource) {
         try { ttsCurrentSource.stop(); } catch(e) {}
         ttsCurrentSource = null;
     }
-    ttsPlaying = false;
 }
 
 async function playTTS(text, voice = 'af_sky', speed = 1.25) {
-    if (!isRadioInitialized || !tts || isMuted) return;
+    if (!isRadioInitialized || !ttsWorker || isMuted) return;
     const cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
     if (!cleanText) return;
     ttsQueue.push({ cleanText, voice, speed });
@@ -1782,9 +1771,20 @@ async function processTTSQueue() {
         try {
             if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
             if (audioContext.state === 'suspended') await audioContext.resume();
-            const result = await tts.generate(cleanText, { voice });
-            if (!ttsPlaying) break; // was stopped mid-generation
-            const buffer = audioContext.createBuffer(1, result.audio.length, result.sampling_rate);
+
+            // Ask worker to generate — wait for audio message back
+            const result = await new Promise((resolve, reject) => {
+                const handler = ({ data }) => {
+                    if (data.type === 'audio') { ttsWorker.removeEventListener('audio', handler); resolve(data); }
+                    else if (data.type === 'error') { ttsWorker.removeEventListener('audio', handler); reject(new Error(data.message)); }
+                };
+                ttsWorker.addEventListener('audio', handler);
+                ttsWorker.postMessage({ type: 'generate', text: cleanText, voice });
+            });
+
+            if (!ttsPlaying) break;
+
+            const buffer = audioContext.createBuffer(1, result.audio.length, result.samplingRate);
             buffer.getChannelData(0).set(result.audio);
             const source = audioContext.createBufferSource();
             source.buffer = buffer;
@@ -1812,15 +1812,10 @@ async function processTTSQueue() {
             distortion.connect(gain);
             gain.connect(audioContext.destination);
             ttsCurrentSource = source;
-            await new Promise(resolve => {
-                source.onended = resolve;
-                source.start();
-            });
+            await new Promise(resolve => { source.onended = resolve; source.start(); });
             ttsCurrentSource = null;
-            sysLog(`Agent initiated voice transmission.`);
-        } catch(e) {
-            console.error("Voice Playback Error:", e);
-        }
+            sysLog('Agent initiated voice transmission.');
+        } catch (e) {}
     }
     ttsPlaying = false;
 }
