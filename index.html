@@ -1624,7 +1624,8 @@ let moonshineTranscriber = null;
 let moonshineReady = null;
 let moonshineModelLoaded = false;
 let lastMoonshineText = "";   
-let isPttActive = false; 
+let isPttActive = false;
+let isPttStarting = false; 
 
 let activeMicStream = null;
 
@@ -1806,6 +1807,7 @@ async function processTTSQueue() {
 // Push-To-Talk Events
 async function handlePttStart() {
     if (!isRadioInitialized || isMuted) return;
+    isPttStarting = true;
 
     isPttActive = true;
     lastMoonshineText = "";
@@ -1849,6 +1851,14 @@ async function handlePttStart() {
         await moonshineTranscriber.start();
         if (moonshineModelLoaded && !isMuted) muteStatusText.textContent = "COMMS: ENABLED";
     } catch (e) {}
+
+    isPttStarting = false;
+
+    // If release already fired while we were starting, clean up now
+    if (!isPttActive) {
+        if (moonshineTranscriber) { moonshineTranscriber.stop(); moonshineTranscriber = null; }
+        if (activeMicStream) { activeMicStream.getTracks().forEach(t => t.stop()); activeMicStream = null; }
+    }
 }
 
 pttBtn.addEventListener('mousedown', handlePttStart);
@@ -1858,6 +1868,10 @@ const handlePttRelease = () => {
     if (pttBtn.classList.contains('active')) {
         isPttActive = false;
         pttBtn.classList.remove('active');
+
+        // If start is still in progress, let it finish and clean up on its own
+        if (isPttStarting) return;
+
         if (moonshineTranscriber) {
             moonshineTranscriber.stop();
             moonshineTranscriber = null;
