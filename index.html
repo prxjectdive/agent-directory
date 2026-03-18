@@ -1038,6 +1038,20 @@ function openChatInterface(agentId) {
         }
     }
 
+    // Desync failsafe: if comms are off but last comms message says enabled, add disabled notice
+    if (isMuted || !isRadioInitialized) {
+        const commsLogs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
+        const lastCommsMsg = [...commsLogs].reverse().find(m =>
+            m.sender === 'SYSTEM' && (
+                m.text === 'Radio communication enabled.' ||
+                m.text === 'Radio communication disabled.'
+            )
+        );
+        if (lastCommsMsg && lastCommsMsg.text === 'Radio communication enabled.') {
+            addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
+        }
+    }
+
     chatInput.focus();
 }
 
@@ -1639,6 +1653,7 @@ async function handleRadioCommand(enable) {
                 commModule.classList.add('active');
                 muteStatusText.textContent = "COMMS: ENABLED";
                 sysLog("Comms link fully operational.", "sys");
+                addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
             } catch (err) {
                 muteStatusText.textContent = "COMMS: FAIL";
                 muteStatusText.classList.add('muted');
@@ -1649,6 +1664,7 @@ async function handleRadioCommand(enable) {
             muteStatusText.classList.remove('muted');
             pttBtn.classList.remove('muted');
             sysLog("Operator enabled comms.");
+            addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
         }
     } else {
         isMuted = true;
@@ -1657,6 +1673,7 @@ async function handleRadioCommand(enable) {
         muteStatusText.classList.add('muted');
         pttBtn.classList.add('muted');
         sysLog("Operator disabled comms.", "warn");
+        addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
     }
 }
 
