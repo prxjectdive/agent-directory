@@ -215,6 +215,10 @@
             background: #fff; color: #000; box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
             border-color: #fff; text-shadow: none;
         }
+        .btn:disabled:hover, .btn[disabled]:hover {
+            background: transparent; color: inherit; box-shadow: none;
+            border-color: inherit; text-shadow: inherit; cursor: not-allowed;
+        }
 
         .cursor {
             display: inline-block; width: 8px; height: 14px; background: #fff;
@@ -457,6 +461,20 @@
             cursor: not-allowed;
             opacity: 0.85;
         }
+        .btn-ptt.muted:active {
+            background: #551111 !important;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255, 85, 85, 0.6) !important;
+            transform: none;
+        }
+        .btn-ptt.asleep {
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        .btn-ptt.asleep:active {
+            background: #444 !important;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.5) !important;
+            transform: none;
+        }
 
         /* =========================================
            FOOTER & EXTRAS
@@ -621,7 +639,7 @@
 (__)  (__\_)(_/\_)\___/ (____)\___) (__) (____/(__\ \__/ (____)
                     </pre>
                     <p class="subtitle">SYSTEM TERMINAL_v2.4 // CONNECTION SECURE // DIRECTORY: /AGENTS/</p>
-                    <button id="btn-open-config" class="btn" style="width: auto; margin: 0 auto; display: block; font-size: 0.85em; border-style: dashed;">[ OPERATOR SYSTEM CONFIGURATION ]</button>
+                    <button id="btn-open-config" class="btn" style="width: auto; margin: 0 auto; display: block; font-size: 0.85em; border-style: dashed;">[ SYSTEM CONFIGURATION ]</button>
                     <hr>
                 </div>
 
@@ -762,7 +780,7 @@
                                 
                                 <div class="comm-module" id="comm-module">
                                     <div class="speaker-grill"></div>
-                                    <button id="btn-ptt" class="btn-ptt" title="Push To Talk"></button>
+                                    <button id="btn-ptt" class="btn-ptt asleep" title="Push To Talk"></button>
                                 </div>
                             </div>
                         </div>
@@ -836,6 +854,7 @@
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
 let gridScrollPosition = 0;
 let activeAgentId = null;
+let isWaitingForResponse = false;
 
 // Mobile log drawer
 const logTab = document.getElementById('log-tab');
@@ -1306,8 +1325,26 @@ function removeMessage(id) {
     if (el) el.remove();
 }
 
+function lockInput() {
+    isWaitingForResponse = true;
+    btnSendChat.disabled = true;
+    btnSendChat.style.opacity = '0.35';
+    btnSendChat.style.cursor = 'not-allowed';
+    if (isRadioInitialized && !isMuted) pttBtn.classList.add('muted');
+}
+
+function unlockInput() {
+    isWaitingForResponse = false;
+    btnSendChat.disabled = false;
+    btnSendChat.style.opacity = '';
+    btnSendChat.style.cursor = '';
+    if (isRadioInitialized && !isMuted) pttBtn.classList.remove('muted');
+    updateSendButton();
+    chatInput.focus();
+}
+
 async function handleSend() {
-    if (!activeAgentId) return;
+    if (!activeAgentId || isWaitingForResponse) return;
     const linkedAgentId = getLinkedAgent();
     const text = chatInput.value.trim();
     if (!text || text === "[ BUFFER PURGED ]") return;
@@ -1421,8 +1458,7 @@ async function handleSend() {
     
     chatInput.value = '';
     updateGhost();
-    chatInput.disabled = true;
-    btnSendChat.disabled = true;
+    lockInput();
 
     const agentProfile = agentProfiles[activeAgentId];
     const typingId = "type-" + Date.now();
@@ -1456,7 +1492,7 @@ async function handleSend() {
         removeMessage(typingId);
         addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
         sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
-        chatInput.disabled = false; btnSendChat.disabled = false; chatInput.focus();
+        unlockInput();
         return;
     }
 
@@ -1489,7 +1525,7 @@ async function handleSend() {
             removeMessage(linkedTypingId);
             renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
             sysLog(`Connection error communicating with Agent ${linkedAgentId}.`, "err");
-            chatInput.disabled = false; btnSendChat.disabled = false; chatInput.focus();
+            unlockInput();
             return;
         }
 
@@ -1501,9 +1537,7 @@ async function handleSend() {
         playTTS(lText, agentProfiles[linkedAgentId].voice, 1.25);
     }
 
-    chatInput.disabled = false;
-    btnSendChat.disabled = false;
-    chatInput.focus();
+    unlockInput();
 }
 
 btnSendChat.addEventListener('click', () => {
@@ -1708,11 +1742,10 @@ async function callAPI(endpoint, headers, body) {
 }
 
 async function handleLink() {
-    if (!activeAgentId || !getLinkedAgent()) return;
+    if (!activeAgentId || !getLinkedAgent() || isWaitingForResponse) return;
     const linkedAgentId = getLinkedAgent();
 
-    chatInput.disabled = true;
-    btnSendChat.disabled = true;
+    lockInput();
     btnSendChat.textContent = '[ ... ]';
 
     const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
@@ -1725,7 +1758,7 @@ async function handleLink() {
     const headers = { "Content-Type": "application/json" };
     if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
 
-    const restoreInput = () => { chatInput.disabled = false; btnSendChat.disabled = false; updateSendButton(); };
+    const restoreInput = () => { unlockInput(); };
 
     // ---- STEP 1: Linked agent speaks ----
     const linkedLog = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
@@ -1835,6 +1868,7 @@ async function handleRadioCommand(enable) {
                 commModule.classList.add('active');
                 muteStatusText.textContent = "COMMS: ENABLED";
                 pttBtn.classList.remove('muted');
+                pttBtn.classList.remove('asleep');
                 sysLog("Comms link fully operational.", "sys");
                 addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
             } catch (err) {
@@ -1856,6 +1890,7 @@ async function handleRadioCommand(enable) {
         muteStatusText.classList.add('muted');
         muteStatusText.classList.remove('enabled');
         pttBtn.classList.add('muted');
+        pttBtn.classList.remove('asleep');
         commModule.classList.remove('active');
 
         // Unload TTS worker
@@ -1868,6 +1903,7 @@ async function handleRadioCommand(enable) {
         if (activeMicStream) { activeMicStream.getTracks().forEach(t => t.stop()); activeMicStream = null; }
         moonshineReady = null;
         moonshineModelLoaded = false;
+        pttBtn.classList.add('asleep');
 
         sysLog("Operator disabled comms.", "warn");
         addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
@@ -2002,7 +2038,7 @@ async function processTTSQueue() {
 
 // Push-To-Talk Events
 async function handlePttStart() {
-    if (!isRadioInitialized || isMuted) return;
+    if (!isRadioInitialized || isMuted || isWaitingForResponse) return;
     isPttStarting = true;
 
     isPttActive = true;
