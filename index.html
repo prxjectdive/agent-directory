@@ -534,7 +534,7 @@
 
                 <!-- CONFIGURATION PANEL -->
                 <div id="config-interface">
-                    <h2 style="color: #ffaa00;">> SYSTEM CONFIGURATION</h2>
+                    <h2 style="color: #a3ffaa;">> SYSTEM CONFIGURATION</h2>
                     <div class="config-group">
                         <label>API Endpoint / Proxy URL:</label>
                         <input type="text" id="cfg-proxy-url" class="config-input" placeholder="https://openrouter.ai/api/v1/chat/completions">
@@ -547,8 +547,8 @@
                         <label>AI Model:</label>
                         <input type="text" id="cfg-model" class="config-input" placeholder="stepfun/step-3.5-flash:free">
                     </div>
-                    <hr style="margin: 15px 0; border-top: 1px dotted #444;">
-                    <h3 style="font-size: 1em; color: #a3ffaa;">> OPERATOR FILES:</h3>
+                    <hr style="margin: 15px 0; border-top: 1px dotted #fff;">
+                    <h3 style="font-size: 1em; color: #fff;">> OPERATOR FILES:</h3>
                     <div class="config-group">
                         <label>Name</label>
                         <input type="text" id="cfg-op-name" class="config-input" placeholder="Operator">
@@ -658,12 +658,13 @@
                         <button id="btn-back-grid" class="btn" style="width: auto; margin-bottom: 20px;">[ RETURN TO DIRECTORY ]</button>
                         <div class="chat-header-top">
                             <div class="chat-status-area">
-                                <h2 id="chat-agent-title">INTERFACING WITH: </h2>
+                                <h2 id="chat-agent-title" style="margin-bottom: 2px;">INTERFACING WITH: </h2>
+                                <p id="link-indicator" style="display:none; color:#ffaa00; text-shadow: 0 0 6px rgba(255,170,0,0.5); margin: 0; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase;">LINKED TO: </p>
                             </div>
                             <!-- RADIO MODULE WRAPPER -->
                             <div class="radio-wrapper">
                                 <div class="mute-switch-wrapper">
-                                    <span id="mute-status-text">COMMS LINK: SLEEP</span>
+                                    <span id="mute-status-text">COMMS: SLEEP</span>
                                 </div>
                                 
                                 <div class="comm-module" id="comm-module">
@@ -675,12 +676,37 @@
                         <hr>
                     </div>
                     <div id="chat-history"></div>
-                    <div class="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
-                        <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
+                    <div style="position: relative;">
+                        <div id="cmd-autocomplete" style="
+                            display: none;
+                            position: absolute;
+                            bottom: calc(100% + 6px);
+                            left: 0; right: 0;
+                            background: #0a0a0a;
+                            border: 1px solid #444;
+                            z-index: 100;
+                            font-size: 0.85em;
+                        "></div>
+                        <div class="chat-input-area" style="position:relative;">
+                            <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
+                            <div id="cmd-ghost" style="
+                                display:none;
+                                position:absolute;
+                                left:13px;
+                                top:50%;
+                                transform:translateY(-50%);
+                                color:#555;
+                                font-family:'Courier New',Courier,monospace;
+                                font-size:1em;
+                                pointer-events:none;
+                                white-space:pre;
+                                line-height:1;
+                            "></div>
+                            <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
+                        </div>
                     </div>
-                    <div class="chat-subtext">SYSTEM COMMANDS: Type <span style="color: #aaa;">/clear</span> to purge history. Type <span style="color: #aaa;">/comms link enable</span> or <span style="color: #aaa;">/comms link disable</span> to enable or disable comms. Type <span style="color: #aaa;">/back</span> to revert the most recent message.</div>
-                    <div class="chat-subtext">COMMS COMMANDS: Say <span style="color: #aaa;">"Clear"</span> to reset current message buffer.</div>
+                    <div class="chat-subtext">Type <span style="color: #aaa;">/</span> to view commands.</div>
+                    <div class="chat-subtext">Say <span style="color: #aaa;">"Clear"</span> to reset voice message buffer.</div>
                 </div>
 
                 <div class="footer" id="main-footer">
@@ -695,7 +721,7 @@
 
 <div id="side-terminal">
     <div class="crt-overlays"></div>
-    <div class="terminal-header">ACTION LOG // DAEMON ACTIVE</div>
+    <div class="terminal-header">SYSTEM LOG // DAEMON ACTIVE</div>
     <div id="terminal-output"></div>
 </div>
 
@@ -706,6 +732,24 @@
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
 let gridScrollPosition = 0;
 let activeAgentId = null;
+const agentLinks = {}; // agentLinks[agentId] = linkedAgentId — tracks each agent's link independently
+
+// Convenience getter/setter for the active agent's current link
+function getLinkedAgent() {
+    if (!activeAgentId) return null;
+    // Check if this agent set a link
+    if (agentLinks[activeAgentId]) return agentLinks[activeAgentId];
+    // Check if another agent has linked to this one
+    const inbound = Object.entries(agentLinks).find(([from, to]) => to === activeAgentId);
+    return inbound ? inbound[0] : null;
+}
+function setLinkedAgent(targetId) { if (activeAgentId) agentLinks[activeAgentId] = targetId; }
+function clearLinkedAgent() {
+    if (!activeAgentId) return;
+    // Remove from both directions
+    delete agentLinks[activeAgentId];
+    Object.keys(agentLinks).forEach(k => { if (agentLinks[k] === activeAgentId) delete agentLinks[k]; });
+}
 
 // Core UI Elements
 const screenEl = document.getElementById('screen');
@@ -742,6 +786,7 @@ const btnBackGrid = document.getElementById('btn-back-grid');
 const pttBtn = document.getElementById('btn-ptt');
 const commModule = document.getElementById('comm-module');
 const muteStatusText = document.getElementById('mute-status-text');
+const linkIndicator = document.getElementById('link-indicator');
 
 // Agent & LLM Constants
 const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
@@ -752,55 +797,54 @@ const agentProfiles = {
     "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_onyx" },
     "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_echo" },
     "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "af_alloy" },
-    "SK-1N": { color: "#ffaa00", greeting: "Simulation Loaded...", voice: "am_michael" },
+    "SK-1N": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_michael" },
     "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "af_bella" }
 };
+
+function getAgentColor(agentId) {
+    if (agentId === 'VALA') return "#ff5555";
+    if (activeAgentId && agentId !== activeAgentId && getLinkedAgent() === agentId) return "#ffaa00";
+    return agentProfiles[agentId]?.color || "#a3ffaa";
+}
+
+function getLinkUIColor() {
+    if (getLinkedAgent() === 'VALA') return "#ff5555";
+    return "#ffaa00";
+}
 
 
 let backendPrompts = {};
 
 async function loadAllPrompts() {
-  const agentFiles = {
-    "D1-VE": "D1-VE.json",
-    "X8-G": "X8-G.json",
-    "S-0L": "S-0L.json",
-    "SK-1N": "SK-1N.json",
-    "VALA": "VALA.json"
-  };
-
-  try {
-    const entries = Object.entries(agentFiles).map(async ([id, file]) => {
-      const res = await fetch(file);
-      if (!res.ok) throw new Error(`HTTP ${res.status} for ${file}`);
-      const data = await res.json();
-      backendPrompts[id] = data.prompt;
-  });
-  await Promise.all(entries);
-
-  const lorebookRes = await fetch("lorebook.json");
-  if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
-  window.lorebook = await lorebookRes.json();
-  console.log("Lorebook loaded:", window.lorebook);
-
-  } catch (err) {
-      console.error(`Error loading prompts:`, err);
-  }
+    const agentFiles = {
+        "D1-VE": "D1-VE.json", "X8-G": "X8-G.json",
+        "S-0L": "S-0L.json", "SK-1N": "SK-1N.json", "VALA": "VALA.json"
+    };
+    try {
+        await Promise.all(Object.entries(agentFiles).map(async ([id, file]) => {
+            const res = await fetch(file);
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${file}`);
+            backendPrompts[id] = (await res.json()).prompt;
+        }));
+        const lorebookRes = await fetch("lorebook.json");
+        if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
+        window.lorebook = await lorebookRes.json();
+    } catch (err) {
+        console.error("Error loading prompts:", err);
+    }
 }
-const promptsReady = loadAllPrompts();
+loadAllPrompts();
 
 // ================================================================
 // SYSTEM LOGGING
 // ================================================================
 function sysLog(message, type = "sys") {
     const now = new Date();
-    const time = [
-        String(now.getHours()).padStart(2, '0'),
-        String(now.getMinutes()).padStart(2, '0'),
-        String(now.getSeconds()).padStart(2, '0')
-    ].join(':');
+    const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     const div = document.createElement('div');
     div.className = 'log-entry';
-    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${message}</span>`;
+    const spanStyle = message.includes('VALA') ? ' style="color:#ff5555;"' : '';
+    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}"${spanStyle}>${message}</span>`;
     
     termOut.appendChild(div);
 
@@ -829,9 +873,7 @@ function sysLog(message, type = "sys") {
         termOut.appendChild(valaDiv);
     }
 
-    if (termOut.childNodes.length > 50) {
-        while(termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
-    }
+    while (termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
     termOut.scrollTop = termOut.scrollHeight;
 }
 
@@ -851,12 +893,8 @@ const bootSequence = [
     " ",
 ];
 
-const enterKeyHandler = (e) => {
-    if(e.key === 'Enter') {
-        showMain();
-    }
-};
-let isSystemMainActive = null;
+const enterKeyHandler = (e) => { if (e.key === 'Enter') showMain(); };
+let isSystemMainActive = false;
 async function runBoot() {
     for (let text of bootSequence) {
         const p = document.createElement('p');
@@ -941,12 +979,9 @@ btnSaveConfig.addEventListener('click', () => {
 
 function loadStoredDates() {
     document.querySelectorAll('.card').forEach(card => {
-        const agentId = card.getAttribute('data-agent-id');
-        const savedDate = localStorage.getItem(`eval_date_${agentId}`);
-        if (savedDate) {
-            const dateSpan = card.querySelector('.eval-date');
-            if (dateSpan) dateSpan.textContent = savedDate;
-        }
+        const saved = localStorage.getItem(`eval_date_${card.getAttribute('data-agent-id')}`);
+        const span = card.querySelector('.eval-date');
+        if (saved && span) span.textContent = saved;
     });
 }
 
@@ -964,8 +999,8 @@ evalButtons.forEach(button => {
         sysLog(`Operator initiated evaluation protocol for agent ${agentId}.`);
         
         if (dateSpan) {
-            const today = new Date();
-            const dateStr = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
+            const d = new Date();
+            const dateStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
             dateSpan.textContent = dateStr;
             localStorage.setItem(`eval_date_${agentId}`, dateStr);
         }
@@ -986,12 +1021,32 @@ function openChatInterface(agentId) {
     chatTitle.style.color = agentProfiles[agentId].color;
     
     loadChatHistory(agentId);
+    updateSendButton();
+
+    // Desync failsafe: if no link is active but last link system message was "established", add severed notice
+    if (!getLinkedAgent()) {
+        const logs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
+        const lastLinkMsg = [...logs].reverse().find(m =>
+            m.sender === 'SYSTEM' && (
+                m.text.toLowerCase().startsWith('link established with') ||
+                m.text.toLowerCase().startsWith('link severed with')
+            )
+        );
+        if (lastLinkMsg && lastLinkMsg.text.toLowerCase().startsWith('link established with')) {
+            const partner = lastLinkMsg.text.replace(/link established with /i, '').replace(/\.$/, '').trim();
+            const color = partner === 'VALA' ? "#ff5555" : "#ffaa00";
+            addMessageToChat("SYSTEM", `Link severed with ${partner}.`, color);
+        }
+    }
+
     chatInput.focus();
 }
 
 btnBackGrid.addEventListener('click', () => {
     sysLog("Operator returned to Agent Directory.");
     activeAgentId = null;
+    stopTTS();
+    updateSendButton();
     chatInterface.style.display = 'none';
     mainHeader.style.display = 'block';
     mainFooter.style.display = 'block';
@@ -1007,20 +1062,29 @@ function loadChatHistory(agentId) {
     const savedHistory = localStorage.getItem(`chat_log_${agentId}`);
     if (savedHistory) {
         const logs = JSON.parse(savedHistory);
-        logs.forEach(log => renderMessage(log.sender, log.text, log.color));
+        logs.forEach(log => {
+            const isOtherAgent = log.sender !== 'USER' && log.sender !== 'SYSTEM' && log.sender !== agentId;
+            const isError = log.color === '#ff5555' && log.sender !== 'SYSTEM' && log.sender !== 'USER';
+            const color = (log.sender === 'USER' || log.sender === 'SYSTEM' || isError)
+                ? log.color
+                : getAgentColor(log.sender);
+            if (isOtherAgent) {
+                renderRightMessage(log.sender, log.text, color);
+            } else {
+                renderMessage(log.sender, log.text, color);
+            }
+        });
     } else {
         addMessageToChat("SYSTEM", agentProfiles[agentId].greeting, agentProfiles[agentId].color);
     }
 }
 
-function renderMessage(sender, text, color, id = null) {
+function renderMessage(sender, text, color, id = null, right = false) {
     const row = document.createElement('div');
-    row.className = `chat-msg-row ${sender === 'USER' ? 'row-user' : 'row-agent'}`;
+    row.className = `chat-msg-row ${(sender === 'USER' || right) ? 'row-user' : 'row-agent'}`;
     if (id) row.id = id;
-    
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
-    
     if (sender === 'USER') {
         const opName = (localStorage.getItem('cfg_op_name') || 'Operator').toUpperCase();
         bubble.innerHTML = `> [${opName}]: ${text}`;
@@ -1029,18 +1093,19 @@ function renderMessage(sender, text, color, id = null) {
         bubble.style.color = color;
         bubble.innerHTML = `> [${sender}]: ${text}`;
     }
-    
     row.appendChild(bubble);
     chatHistory.appendChild(row);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+function renderRightMessage(sender, text, color, id = null) {
+    renderMessage(sender, text, color, id, true);
+}
+
 function addMessageToChat(sender, text, color) {
     renderMessage(sender, text, color);
     if (!activeAgentId) return;
-    const savedHistory = localStorage.getItem(`chat_log_${activeAgentId}`);
-    const logs = savedHistory ? JSON.parse(savedHistory) : [];
-    const timestamp = new Date().toISOString();
+    const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
     logs.push({ sender, text, color });
     localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
 }
@@ -1052,13 +1117,16 @@ function removeMessage(id) {
 
 async function handleSend() {
     if (!activeAgentId) return;
+    const linkedAgentId = getLinkedAgent();
     const text = chatInput.value.trim();
     if (!text || text === "[ LISTENING... ]" || text === "[ BUFFER PURGED ]") return;
 
     // Command interceptor
     if (text.startsWith("/")) {
         const cmd = text.toLowerCase();
-        chatInput.value = ""; // Clear input for all commands
+        chatInput.value = "";
+        updateGhost();
+        hideAutocomplete();
         
         if (cmd === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
@@ -1070,20 +1138,86 @@ async function handleSend() {
         
         if (cmd === "/back") {
             const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-            // Check logs.length > 1 to ensure we don't delete the initial system greeting (index 0)
             if (logs.length > 1) {
-                const removed = logs.pop(); // Remove only the latest single message
+                const removed = logs.pop();
                 localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
                 loadChatHistory(activeAgentId);
                 sysLog(`Removed latest message from ${removed.sender}.`, "sys");
+
+                if (linkedAgentId) {
+                    const otherLogs = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+                    if (otherLogs.length > 0 && otherLogs[otherLogs.length - 1].text === removed.text) {
+                        otherLogs.pop();
+                        localStorage.setItem(`chat_log_${linkedAgentId}`, JSON.stringify(otherLogs));
+                        sysLog(`Mirrored /back on ${linkedAgentId}.`, "sys");
+                    } else {
+                        sysLog(`Desync detected — /back applied to ${activeAgentId} only.`, "warn");
+                    }
+                }
             } else {
                 sysLog("History is at baseline. Cannot revert further.", "warn");
             }
             return;
         }
 
-        if (cmd === "/comms link enable") { handleRadioCommand(true); return; }
-        if (cmd === "/comms link disable") { handleRadioCommand(false); return; }
+        if (cmd === "/comms enable") { handleRadioCommand(true); return; }
+        if (cmd === "/comms disable") { handleRadioCommand(false); return; }
+
+        if (cmd === "/link") {
+            sysLog("No agent specified. Use /link [agent].", "err");
+            return;
+        }
+
+        if (cmd.startsWith("/link ")) {
+            const rawTarget = text.slice(6).trim().toUpperCase();
+            if (!rawTarget) {
+                sysLog("No agent specified. Use /link [agent].", "err");
+                return;
+            }
+            const targetId = Object.keys(agentProfiles).find(id => id.toUpperCase() === rawTarget);
+            if (!targetId) {
+                sysLog(`Unknown agent: ${rawTarget}`, "err");
+                return;
+            }
+            if (targetId === activeAgentId) {
+                sysLog(`${activeAgentId} is already linked to itself. Use /unlink first.`, "err");
+                return;
+            }
+            const currentLink = getLinkedAgent();
+            if (currentLink && currentLink !== targetId) {
+                sysLog(`${activeAgentId} is already linked to ${currentLink}. Use /unlink first.`, "err");
+                return;
+            }
+            const targetCurrentLink = agentLinks[targetId] || Object.entries(agentLinks).find(([from, to]) => to === targetId)?.[0] || null;
+            if (targetCurrentLink && targetCurrentLink !== activeAgentId) {
+                sysLog(`${targetId} is already linked to ${targetCurrentLink}. Use /unlink first.`, "err");
+                return;
+            }
+            setLinkedAgent(targetId);
+            sysLog(`Link established between ${activeAgentId} and ${targetId}.`, "sys");
+            const linkColor = targetId === 'VALA' ? "#ff5555" : "#ffaa00";
+            const linkColorOther = activeAgentId === 'VALA' ? "#ff5555" : "#ffaa00";
+            addMessageToChat("SYSTEM", `Link established with ${targetId}.`, linkColor);
+            saveToAgentLog(targetId, "SYSTEM", `Link established with ${activeAgentId}.`, linkColorOther);
+            updateSendButton();
+            return;
+        }
+
+        if (cmd === "/unlink") {
+            const currentLink = getLinkedAgent();
+            if (!currentLink) {
+                sysLog("No active link to sever.", "warn");
+                return;
+            }
+            clearLinkedAgent();
+            sysLog(`Link severed between ${activeAgentId} and ${currentLink}.`, "sys");
+            const severColor = currentLink === 'VALA' ? "#ff5555" : "#ffaa00";
+            const severColorOther = activeAgentId === 'VALA' ? "#ff5555" : "#ffaa00";
+            addMessageToChat("SYSTEM", `Link severed with ${currentLink}.`, severColor);
+            saveToAgentLog(currentLink, "SYSTEM", `Link severed with ${activeAgentId}.`, severColorOther);
+            updateSendButton();
+            return;
+        }
         
         // If it starts with / but isn't handled above
         sysLog(`INVALID COMMAND: ${text}`, "err");
@@ -1095,93 +1229,381 @@ async function handleSend() {
     sysLog(`Operator sent transmission to Agent ${activeAgentId}.`);
     
     chatInput.value = '';
+    updateGhost();
     chatInput.disabled = true;
     btnSendChat.disabled = true;
-    
+
     const agentProfile = agentProfiles[activeAgentId];
-    
     const typingId = "type-" + Date.now();
     renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
-    
+
+    const userApiKey = localStorage.getItem('or_api_key');
+    const model = localStorage.getItem('or_model') || defaultModel;
+    const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
+    const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
+    const logHistory = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+    const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
+    const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
+    const headers = { "Content-Type": "application/json" };
+    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+
+    const loreSection = buildLore((logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase());
+    const combinedSystemPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, loreSection, currentDateTime);
+    const apiMessages = [{ role: "system", content: combinedSystemPrompt }, ...buildApiMsgsFromLog(logHistory.slice(-200), activeAgentId)];
+    const modelTemp = 0.8;
+
+    console.group(`[SEND] ${activeAgentId} — operator message`);
+    console.log('Agent ID:', activeAgentId);
+    console.log('Linked agent:', linkedAgentId || 'none');
+    console.log('JSON prompt:', backendPrompts[activeAgentId]);
+    console.log('System prompt:', combinedSystemPrompt);
+    console.log('Messages:', apiMessages);
+    console.groupEnd();
+
+    let responseText;
     try {
-        const userApiKey = localStorage.getItem('or_api_key');
-        const customProxyUrl = localStorage.getItem('or_proxy_url');
-        const model = localStorage.getItem('or_model') || defaultModel;
-        const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
-        const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
-        const historyStr = localStorage.getItem(`chat_log_${activeAgentId}`);
-        const logHistory = historyStr ? JSON.parse(historyStr) : [];
-        const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-
-                   const globalSystemPrompt = `[SYSTEM COMMAND]: You are ${activeAgentId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing a text-based terminal. Anything can happen in this simulation. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing. Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.`;
-        
-        const scanText = (logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase();
-        const matchedLore = (window.lorebook || [])
-            .filter(entry => entry.keywords.some(kw => scanText.includes(kw.toLowerCase())))
-            .map(entry => entry.content)
-            .join("\n\n");
-        const loreSection = matchedLore ? `\n\n[WORLD LORE]:\n${matchedLore}` : "";
-        const combinedSystemPrompt = `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[activeAgentId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n${globalSystemPrompt}$`;
-
-console.log('activeAgentId =', activeAgentId);
-console.log('systemPrompt =', backendPrompts[activeAgentId]);
-
-        const apiMessages = [{ role: "system", content: combinedSystemPrompt }];
-        
-        logHistory.slice(-200).forEach(msg => {
-            let contentText = msg.text;
-            if (msg.timestamp) {
-                const d = new Date(msg.timestamp);
-                const timeStr = [
-                    String(d.getHours()).padStart(2, '0'),
-                    String(d.getMinutes()).padStart(2, '0'),
-                    String(d.getSeconds()).padStart(2, '0')
-                ].join(':');
-                contentText = `[${timeStr}] ${contentText}`;
-            }
-            apiMessages.push({ role: msg.sender === 'USER' ? 'user' : 'assistant', content: contentText });
-        });
-        
-        // Set your model temperature here
-
-        const modelTemp = 0.8;
-
-        let response;
-        const endpoint = customProxyUrl || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-        const headers = { "Content-Type": "application/json" };
-        if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
-
-        response = await fetch(endpoint, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify({ model: model, messages: apiMessages, temperature: modelTemp })
-        });
-        
-        const data = await response.json();
-        removeMessage(typingId);
-        
-        if (data.error || !data.choices || !data.choices[0]) {
-            addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
-            sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
-        } else {
-            const responseText = data.choices[0].message.content;
-            addMessageToChat(activeAgentId, responseText, agentProfile.color);
-            sysLog(`Agent ${activeAgentId} responded.`);
-            playTTS(responseText, agentProfile.voice, 1.25);
-        }
-    } catch (err) {
+        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages, temperature: modelTemp });
+    } catch {
         removeMessage(typingId);
         addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
-        sysLog(`Network error communicating with Agent ${activeAgentId}.`, "err");
+        sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
+        chatInput.disabled = false; btnSendChat.disabled = false; chatInput.focus();
+        return;
     }
-    
+
+    removeMessage(typingId);
+    addMessageToChat(activeAgentId, responseText, agentProfile.color);
+    sysLog(`Agent ${activeAgentId} responded.`);
+    playTTS(responseText, agentProfile.voice, 1.25);
+
+    if (linkedAgentId) {
+        saveToAgentLog(linkedAgentId, 'USER', text, '#ffffff');
+        saveToAgentLog(linkedAgentId, activeAgentId, responseText, agentProfile.color);
+
+        const linkedLog = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+        const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
+        const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
+
+        console.group(`[OPERATOR MSG] Linked agent ${linkedAgentId} responds`);
+        console.log('Agent ID:', linkedAgentId);
+        console.log('JSON prompt:', backendPrompts[linkedAgentId]);
+        console.log('System prompt:', linkedSysPrompt);
+        console.log('Messages:', linkedApiMessages);
+        console.groupEnd();
+
+        const linkedTypingId = "lnk-op-" + Date.now();
+        renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
+
+        let lText;
+        try {
+            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages, temperature: modelTemp });
+        } catch {
+            removeMessage(linkedTypingId);
+            renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
+            sysLog(`Connection error communicating with Agent ${linkedAgentId}.`, "err");
+            chatInput.disabled = false; btnSendChat.disabled = false; chatInput.focus();
+            return;
+        }
+
+        removeMessage(linkedTypingId);
+        renderRightMessage(linkedAgentId, lText, getAgentColor(linkedAgentId));
+        saveToAgentLog(linkedAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
+        saveToAgentLog(activeAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
+        sysLog(`Agent ${linkedAgentId} responded.`);
+        playTTS(lText, agentProfiles[linkedAgentId].voice, 1.25);
+    }
+
     chatInput.disabled = false;
     btnSendChat.disabled = false;
     chatInput.focus();
 }
 
-btnSendChat.addEventListener('click', handleSend);
-chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+btnSendChat.addEventListener('click', () => {
+    if (getLinkedAgent() && chatInput.value.trim() === '') {
+        handleLink();
+    } else {
+        handleSend();
+    }
+});
+chatInput.addEventListener('keydown', (e) => {
+    // Autocomplete navigation takes priority when visible
+    if (cmdAutocomplete.style.display !== 'none') {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setAcIndex(Math.min(acIndex + 1, acVisible.length - 1)); return; }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); setAcIndex(Math.max(acIndex - 1, 0)); return; }
+        if (e.key === 'Escape')    { hideAutocomplete(); return; }
+        if ((e.key === 'Tab' || e.key === 'Enter') && acIndex >= 0) {
+            e.preventDefault();
+            applyAutocomplete(acVisible[acIndex]);
+            return;
+        }
+    }
+    // Normal send / link
+    if (e.key === 'Enter') {
+        if (getLinkedAgent() && chatInput.value.trim() === '') {
+            handleLink();
+        } else {
+            handleSend();
+        }
+    }
+    if (e.key === 'Tab') e.preventDefault();
+});
+chatInput.addEventListener('input', () => {
+    updateSendButton();
+    updateGhost();
+    const val = chatInput.value;
+    if (!val || !val.startsWith('/')) { hideAutocomplete(); return; }
+    if (val.startsWith('/link ') && val.length > '/link '.length) { hideAutocomplete(); return; }
+    renderAutocomplete(commands.filter(c => c.cmd.startsWith(val.toLowerCase())));
+});
+chatInput.addEventListener('keyup', updateSendButton);
+
+// ============================================================================
+// COMMAND AUTOCOMPLETE
+// ============================================================================
+const cmdAutocomplete = document.getElementById('cmd-autocomplete');
+const cmdGhost = document.getElementById('cmd-ghost');
+
+const commands = [
+    { cmd: '/back',          desc: 'Revert the most recent message' },
+    { cmd: '/clear',         desc: 'Purge full chat history' },
+    { cmd: '/comms enable',  desc: 'Enable voice comms' },
+    { cmd: '/comms disable', desc: 'Disable voice comms' },
+    { cmd: '/link ',         desc: 'Establish an agent-to-agent connection', ghost: '[agent]' },
+    { cmd: '/unlink',        desc: 'Sever the active agent link' },
+];
+
+let acIndex = -1;
+let acVisible = [];
+
+function renderAutocomplete(matches) {
+    acVisible = matches;
+    acIndex = -1;
+    if (matches.length === 0) { cmdAutocomplete.style.display = 'none'; return; }
+    cmdAutocomplete.innerHTML = '';
+    matches.forEach((m, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; padding:8px 12px; cursor:pointer; border-bottom:1px solid #1a1a1a; gap:20px;';
+        const label = m.ghost ? `/link <span style="color:#555;">[agent]</span>` : m.cmd;
+        row.innerHTML = `<span style="color:#fff; white-space:nowrap;">${label}</span><span style="color:#555; text-align:right;">${m.desc}</span>`;
+        row.addEventListener('mousedown', e => { e.preventDefault(); applyAutocomplete(m); });
+        row.addEventListener('mouseenter', () => setAcIndex(i));
+        cmdAutocomplete.appendChild(row);
+    });
+    cmdAutocomplete.style.display = 'block';
+}
+
+function setAcIndex(i) {
+    const rows = cmdAutocomplete.querySelectorAll('div');
+    rows.forEach((r, idx) => { r.style.background = idx === i ? '#1a1a1a' : 'transparent'; });
+    acIndex = i;
+}
+
+function updateGhost() {
+    if (chatInput.value === '/link ') {
+        cmdGhost.innerHTML = '<span style="color:transparent;">/link </span>[agent]';
+        cmdGhost.style.display = 'block';
+    } else {
+        cmdGhost.style.display = 'none';
+    }
+}
+
+function applyAutocomplete(m) {
+    chatInput.value = m.cmd;
+    cmdAutocomplete.style.display = 'none';
+    acIndex = -1;
+    acVisible = [];
+    updateGhost();
+    updateSendButton();
+    chatInput.focus();
+}
+
+function hideAutocomplete() {
+    cmdAutocomplete.style.display = 'none';
+    acIndex = -1;
+    acVisible = [];
+}
+
+chatInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
+
+// Builds a lorebook context string from scan text
+function buildLore(scanText) {
+    const matched = (window.lorebook || [])
+        .filter(e => e.keywords.some(kw => scanText.toLowerCase().includes(kw.toLowerCase())))
+        .map(e => e.content).join("\n\n");
+    return matched ? `\n\n[WORLD LORE]:\n${matched}` : "";
+}
+
+// Builds role-correct API messages from an agent's log
+function buildApiMsgsFromLog(log, selfId) {
+    return collapseRoles(log.map(m => {
+        const prefix = m.sender === 'USER' ? 'OPERATOR' : m.sender === 'SYSTEM' ? 'SYSTEM' : m.sender;
+        return { role: m.sender === selfId ? "assistant" : "user", content: `${prefix}: ${m.text}` };
+    }));
+}
+
+// ============================================================================
+// AGENT LINK SYSTEM
+// ============================================================================
+
+// Strips any [SENDER]: prefix the LLM may echo back, preventing double-ups
+function stripPrefix(text) {
+    let result = text.trim();
+    const pattern = /^\s*(\[[^\]]+\]|[\w\d\-]+)\s*:\s*/i;
+    let prev;
+    do {
+        prev = result;
+        result = result.replace(pattern, '').trim();
+    } while (result !== prev);
+    return result;
+}
+
+// Merges consecutive messages of the same role into a single block,
+// preventing malformed alternating-turn violations sent to the LLM
+function collapseRoles(msgs) {
+    return msgs.reduce((acc, msg) => {
+        const prev = acc[acc.length - 1];
+        if (prev && prev.role === msg.role) {
+            prev.content += `\n${msg.content}`;
+        } else {
+            acc.push({ ...msg });
+        }
+        return acc;
+    }, []);
+}
+
+// Builds a system prompt for an agent, link-aware
+function buildAgentSysPrompt(selfId, linkedId, opNameRaw, userInfo, loreSection, currentDateTime) {
+    const linkedLine = linkedId
+        ? ` You are also currently linked with ${linkedId}, another Eclipse agent who can hear and respond through the same terminal.`
+        : "";
+    return `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[selfId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n[SYSTEM COMMAND]: You are ${selfId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing but a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing.${linkedLine} Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Do not use quotation marks around words or phrases. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.$`;
+}
+
+function updateSendButton() {
+    const linkedAgentId = getLinkedAgent();
+    const uiColor = getLinkUIColor();
+    if (linkedAgentId && chatInput.value.trim() === '') {
+        btnSendChat.textContent = '[ LINK ]';
+        btnSendChat.style.color = uiColor;
+        btnSendChat.style.borderColor = uiColor;
+    } else {
+        btnSendChat.textContent = '[ SEND ]';
+        btnSendChat.style.color = '';
+        btnSendChat.style.borderColor = '';
+    }
+    if (linkedAgentId) {
+        linkIndicator.textContent = `LINKED TO: ${linkedAgentId}`;
+        linkIndicator.style.color = uiColor;
+        linkIndicator.style.textShadow = `0 0 6px ${uiColor}40`;
+        linkIndicator.style.display = 'block';
+    } else {
+        linkIndicator.style.display = 'none';
+    }
+}
+
+function saveToAgentLog(agentId, sender, text, color) {
+    const key = `chat_log_${agentId}`;
+    const logs = JSON.parse(localStorage.getItem(key) || "[]");
+    logs.push({ sender, text, color });
+    localStorage.setItem(key, JSON.stringify(logs));
+}
+
+// Shared API fetch helper
+async function callAPI(endpoint, headers, body) {
+    const res = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
+    return stripPrefix(data.choices[0].message.content);
+}
+
+async function handleLink() {
+    if (!activeAgentId || !getLinkedAgent()) return;
+    const linkedAgentId = getLinkedAgent();
+
+    chatInput.disabled = true;
+    btnSendChat.disabled = true;
+    btnSendChat.textContent = '[ ... ]';
+
+    const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
+    const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
+    const model = localStorage.getItem('or_model') || defaultModel;
+    const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
+    const modelTemp = 0.8;
+    const userApiKey = localStorage.getItem('or_api_key');
+    const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
+    const headers = { "Content-Type": "application/json" };
+    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+
+    const restoreInput = () => { chatInput.disabled = false; btnSendChat.disabled = false; updateSendButton(); };
+
+    // ---- STEP 1: Linked agent speaks ----
+    const linkedLog = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+    const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
+    const linkedApiMsgs = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
+
+    console.group(`[LINK] Step 1 — ${linkedAgentId} speaks`);
+    console.log('Agent ID:', linkedAgentId);
+    console.log('JSON prompt:', backendPrompts[linkedAgentId]);
+    console.log('System prompt:', linkedSysPrompt);
+    console.log('Messages:', linkedApiMsgs);
+    console.groupEnd();
+
+    const linkedTypingId = "lnk-t-" + Date.now();
+    renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
+
+    let linkedResponse;
+    try {
+        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs, temperature: modelTemp });
+    } catch {
+        removeMessage(linkedTypingId);
+        renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
+        sysLog(`Link error: ${linkedAgentId} failed to respond.`, "err");
+        restoreInput();
+        return;
+    }
+
+    removeMessage(linkedTypingId);
+    renderRightMessage(linkedAgentId, linkedResponse, getAgentColor(linkedAgentId));
+    saveToAgentLog(linkedAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
+    saveToAgentLog(activeAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
+    sysLog(`Agent ${linkedAgentId} transmitted to ${activeAgentId}.`);
+    playTTS(linkedResponse, agentProfiles[linkedAgentId].voice, 1.25);
+
+    // ---- STEP 2: Active agent responds ----
+    const activeLog = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+    const activeSysPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, buildLore(activeLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
+    const activeApiMsgs = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
+
+    console.group(`[LINK] Step 2 — ${activeAgentId} responds`);
+    console.log('Agent ID:', activeAgentId);
+    console.log('JSON prompt:', backendPrompts[activeAgentId]);
+    console.log('System prompt:', activeSysPrompt);
+    console.log('Messages:', activeApiMsgs);
+    console.groupEnd();
+
+    const activeTypingId = "act-t-" + Date.now();
+    renderMessage(activeAgentId, "Establishing connection...", agentProfiles[activeAgentId].color, activeTypingId);
+
+    let activeResponse;
+    try {
+        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs, temperature: modelTemp });
+    } catch {
+        removeMessage(activeTypingId);
+        renderMessage(activeAgentId, "Error: Connection lost.", "#ff5555");
+        sysLog(`Link error: ${activeAgentId} failed to respond.`, "err");
+        restoreInput();
+        return;
+    }
+
+    removeMessage(activeTypingId);
+    renderMessage(activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
+    saveToAgentLog(activeAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
+    saveToAgentLog(linkedAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
+    sysLog(`Agent ${activeAgentId} responded to ${linkedAgentId}.`);
+    playTTS(activeResponse, agentProfiles[activeAgentId].voice, 1.25);
+
+    restoreInput();
+}
 
 // ============================================================================
 // AUDIO, RADIO & AI MODELS (TTS/STT)
@@ -1200,8 +1622,8 @@ let isPttActive = false;
 async function handleRadioCommand(enable) {
     if (enable) {
         if (!isRadioInitialized) {
-            sysLog("Operator established comms link.", "warn");
-            muteStatusText.textContent = "COMMS LINK: SYNCING...";
+            sysLog("Operator established comms.", "warn");
+            muteStatusText.textContent = "COMMS: SYNCING...";
             muteStatusText.classList.add('enabled');
             muteStatusText.classList.remove('muted');
             
@@ -1212,26 +1634,27 @@ async function handleRadioCommand(enable) {
                 isRadioInitialized = true;
                 isMuted = false;
                 commModule.classList.add('active');
-                muteStatusText.textContent = "COMMS LINK: ENABLED";
+                muteStatusText.textContent = "COMMS: ENABLED";
                 sysLog("Comms link fully operational.", "sys");
             } catch (err) {
                 console.error("Init Error:", err);
-                muteStatusText.textContent = "COMMS LINK: FAIL";
+                muteStatusText.textContent = "COMMS: FAIL";
                 muteStatusText.classList.add('muted');
             }
         } else {
             isMuted = false;
-            muteStatusText.textContent = "COMMS LINK: ENABLED";
+            muteStatusText.textContent = "COMMS: ENABLED";
             muteStatusText.classList.remove('muted');
             pttBtn.classList.remove('muted');
-            sysLog("Operator enabled comms link.");
+            sysLog("Operator enabled comms.");
         }
     } else {
         isMuted = true;
-        muteStatusText.textContent = "COMMS LINK: DISABLED";
+        stopTTS();
+        muteStatusText.textContent = "COMMS: DISABLED";
         muteStatusText.classList.add('muted');
         pttBtn.classList.add('muted');
-        sysLog("Operator disabled comms link.", "warn");
+        sysLog("Operator disabled comms.", "warn");
     }
 }
 
@@ -1249,9 +1672,9 @@ async function loadKokoro() {
             progress_callback: (info) => {
                 if (info.status === 'progress' && info.total) {
                     const percent = Math.round((info.loaded / info.total) * 100);
-                    muteStatusText.textContent = `COMMS LINK: SYNC ${percent}%`;
+                    muteStatusText.textContent = `COMMS: SYNC ${percent}%`;
                 } else if (info.status === 'ready') {
-                    muteStatusText.textContent = "COMMS LINK: INIT...";
+                    muteStatusText.textContent = "COMMS: INIT...";
                 }
             }
         });
@@ -1330,64 +1753,95 @@ function makeDistortionCurve(amount = 20) {
     return curve;
 }
 
-async function playTTS(text, voice = 'af_sky', speed = 1.25) {  
-    if (!isRadioInitialized || !tts || isMuted) return; 
-    try {
-        let cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
-        if (!cleanText) return;
-        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === 'suspended') await audioContext.resume();
-        const result = await tts.generate(cleanText, { voice });
-        const buffer = audioContext.createBuffer(1, result.audio.length, result.sampling_rate);
-        buffer.getChannelData(0).set(result.audio);
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.playbackRate.value = speed;
-        source.detune.value = -350;
-        const bandpass = audioContext.createBiquadFilter();
-        bandpass.type = 'bandpass';
-        bandpass.frequency.value = 1500;  
-        bandpass.Q.value = 1.0;
-        const highpass = audioContext.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.value = 300;
-        const lowpass = audioContext.createBiquadFilter();
-        lowpass.type = 'lowpass';
-        lowpass.frequency.value = 3500;
-        const distortion = audioContext.createWaveShaper();
-        distortion.curve = makeDistortionCurve(15);  
-        distortion.oversample = '4x';
-        const gain = audioContext.createGain();
-        gain.gain.value = 1;
-        source.connect(bandpass);
-        bandpass.connect(highpass);
-        highpass.connect(lowpass);
-        lowpass.connect(distortion);
-        distortion.connect(gain);
-        gain.connect(audioContext.destination);
-        source.start();
-        sysLog(`Agent initiated voice transmission.`);
-    } catch (e) {
-        console.error("Voice Playback Error:", e);
+let ttsQueue = [];
+let ttsPlaying = false;
+let ttsCurrentSource = null;
+
+function stopTTS() {
+    ttsQueue = [];
+    if (ttsCurrentSource) {
+        try { ttsCurrentSource.stop(); } catch(e) {}
+        ttsCurrentSource = null;
     }
+    ttsPlaying = false;
+}
+
+async function playTTS(text, voice = 'af_sky', speed = 1.25) {
+    if (!isRadioInitialized || !tts || isMuted) return;
+    const cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
+    if (!cleanText) return;
+    ttsQueue.push({ cleanText, voice, speed });
+    if (!ttsPlaying) processTTSQueue();
+}
+
+async function processTTSQueue() {
+    if (ttsPlaying || ttsQueue.length === 0) return;
+    ttsPlaying = true;
+    while (ttsQueue.length > 0) {
+        const { cleanText, voice, speed } = ttsQueue.shift();
+        try {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            const result = await tts.generate(cleanText, { voice });
+            if (!ttsPlaying) break; // was stopped mid-generation
+            const buffer = audioContext.createBuffer(1, result.audio.length, result.sampling_rate);
+            buffer.getChannelData(0).set(result.audio);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.playbackRate.value = speed;
+            source.detune.value = -350;
+            const bandpass = audioContext.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 1500;
+            bandpass.Q.value = 1.0;
+            const highpass = audioContext.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = 300;
+            const lowpass = audioContext.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = 3500;
+            const distortion = audioContext.createWaveShaper();
+            distortion.curve = makeDistortionCurve(15);
+            distortion.oversample = '4x';
+            const gain = audioContext.createGain();
+            gain.gain.value = 1;
+            source.connect(bandpass);
+            bandpass.connect(highpass);
+            highpass.connect(lowpass);
+            lowpass.connect(distortion);
+            distortion.connect(gain);
+            gain.connect(audioContext.destination);
+            ttsCurrentSource = source;
+            await new Promise(resolve => {
+                source.onended = resolve;
+                source.start();
+            });
+            ttsCurrentSource = null;
+            sysLog(`Agent initiated voice transmission.`);
+        } catch(e) {
+            console.error("Voice Playback Error:", e);
+        }
+    }
+    ttsPlaying = false;
 }
 
 // Push-To-Talk Events
-pttBtn.addEventListener('mousedown', async () => {
-    if (!isRadioInitialized || isMuted) return; 
-    
+async function handlePttStart() {
+    if (!isRadioInitialized || isMuted) return;
     isPttActive = true;
-    lastMoonshineText = ""; 
+    lastMoonshineText = "";
     chatInput.value = "[ LISTENING... ]";
     pttBtn.classList.add('active');
     sysLog("Operator initiated voice transmission.");
-
     try {
         const transcriber = await loadMoonshine();
         if (typeof transcriber.reset === 'function') transcriber.reset();
         await transcriber.start();
     } catch (e) {}
-});
+}
+
+pttBtn.addEventListener('mousedown', handlePttStart);
+pttBtn.addEventListener('touchstart', async (e) => { e.preventDefault(); await handlePttStart(); });
 
 const handlePttRelease = () => {
     if (pttBtn.classList.contains('active')) {
@@ -1408,28 +1862,7 @@ const handlePttRelease = () => {
 
 window.addEventListener('mouseup', handlePttRelease);
 
-pttBtn.addEventListener('touchstart', async (e) => {
-    if (!isRadioInitialized || isMuted) return;
-    e.preventDefault();
-    
-    isPttActive = true;
-    lastMoonshineText = "";
-    chatInput.value = "[ LISTENING... ]";
-    pttBtn.classList.add('active');
-    sysLog("Operator initiated voice transmission.");
-
-    try {
-        const transcriber = await loadMoonshine();
-        if (typeof transcriber.reset === 'function') transcriber.reset();
-        await transcriber.start();
-    } catch (e) {}
-});
-
-pttBtn.addEventListener('touchend', (e) => {
-    if (!isRadioInitialized || isMuted) return;
-    e.preventDefault();
-    handlePttRelease();
-});
+pttBtn.addEventListener('touchend', (e) => { e.preventDefault(); handlePttRelease(); });
 
 // START
 setTimeout(runBoot, 500);
