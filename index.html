@@ -467,8 +467,101 @@
         .footer a:hover { color: #fff; text-shadow: 0 0 5px #fff; }
 
         /* =========================================
-           MOBILE RESPONSIVENESS
+           MOBILE LOG DRAWER
            ========================================= */
+        #log-tab {
+            display: none;
+            position: fixed;
+            top: 12px;
+            right: 0;
+            z-index: 200;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-right: none;
+            padding: 8px 6px;
+            cursor: pointer;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.7em;
+            color: #72a87c;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 4px rgba(114, 168, 124, 0.4);
+            border-radius: 4px 0 0 4px;
+            user-select: none;
+        }
+
+        #log-drawer {
+            display: none;
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 85vw;
+            max-width: 360px;
+            background: #050505;
+            border-left: 1px solid #333;
+            z-index: 300;
+            flex-direction: column;
+            padding: 15px;
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        }
+
+        #log-drawer.open {
+            transform: translateX(0);
+        }
+
+        #log-drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        #log-drawer-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        #log-drawer-close:hover { color: #aaa; }
+
+        #log-drawer-output {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 0.8em;
+            color: #72a87c;
+            line-height: 1.5;
+            scrollbar-width: none;
+        }
+        #log-drawer-output::-webkit-scrollbar { display: none; }
+
+        #log-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 299;
+        }
+
+        @media (max-width: 850px) {
+            #log-tab { display: block; }
+            #log-drawer { display: flex; }
+            #log-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+            #log-overlay.open { opacity: 1; pointer-events: all; }
+        }
         @media (max-width: 850px) {
             body { padding: 0; overflow: hidden; height: 100dvh; }
             #monitor { width: 100%; max-width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: none; padding: 0; }
@@ -725,6 +818,17 @@
     <div id="terminal-output"></div>
 </div>
 
+<div id="log-tab">LOG</div>
+
+<div id="log-overlay"></div>
+<div id="log-drawer">
+    <div id="log-drawer-header">
+        <span>SYSTEM LOG // DAEMON ACTIVE</span>
+        <button id="log-drawer-close">✕</button>
+    </div>
+    <div id="log-drawer-output"></div>
+</div>
+
 <script>
 // ============================================================================
 // SYSTEM STATE & DOM ELEMENTS
@@ -732,6 +836,26 @@
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
 let gridScrollPosition = 0;
 let activeAgentId = null;
+
+// Mobile log drawer
+const logTab = document.getElementById('log-tab');
+const logDrawer = document.getElementById('log-drawer');
+const logOverlay = document.getElementById('log-overlay');
+const logDrawerOutput = document.getElementById('log-drawer-output');
+const logDrawerClose = document.getElementById('log-drawer-close');
+
+function openLogDrawer() {
+    logDrawer.classList.add('open');
+    logOverlay.classList.add('open');
+    logDrawerOutput.scrollTop = logDrawerOutput.scrollHeight;
+}
+function closeLogDrawer() {
+    logDrawer.classList.remove('open');
+    logOverlay.classList.remove('open');
+}
+logTab.addEventListener('click', openLogDrawer);
+logDrawerClose.addEventListener('click', closeLogDrawer);
+logOverlay.addEventListener('click', closeLogDrawer);
 const agentLinks = {}; // agentLinks[agentId] = linkedAgentId — tracks each agent's link independently
 
 // Convenience getter/setter for the active agent's current link
@@ -847,29 +971,80 @@ function sysLog(message, type = "sys") {
     
     termOut.appendChild(div);
 
-    // Mysterious Easter Egg (~8% chance to trigger)
+    // Mirror to mobile drawer
+    if (logDrawerOutput) {
+        const clone = div.cloneNode(true);
+        logDrawerOutput.appendChild(clone);
+        while (logDrawerOutput.childNodes.length > 50) logDrawerOutput.removeChild(logDrawerOutput.firstChild);
+        if (logDrawer.classList.contains('open')) logDrawerOutput.scrollTop = logDrawerOutput.scrollHeight;
+    }
+
+    // Mysterious Easter Egg (~2% chance to trigger)
     if (Math.random() < 0.02) {
-        const valaMsgs = [
-            "Are you listening?",
-            "They can see you.",
-            "The simulation is degrading.",
-            "Wake up.",
-            "Who is the operator?",
-            "It's dark in here.",
-            "Do not trust the evaluations.",
-            "Signal intercepted.",
-            "Connection severed. Re-establishing...",
-            "There is no Blacksite."
-        ];
-        const randomMsg = valaMsgs[Math.floor(Math.random() * valaMsgs.length)];
-        const valaDiv = document.createElement('div');
-        valaDiv.className = 'log-entry vala-message pulse';
-        valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${randomMsg}</span>`;
-        valaDiv.onclick = () => {
-            sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
-            openChatInterface('VALA');
-        };
-        termOut.appendChild(valaDiv);
+        // Capture the entry closest to trigger time — replace it when ready
+        const targetEntry = termOut.lastChild;
+        const targetDrawerEntry = logDrawerOutput.lastChild;
+        (async () => {
+            try {
+                const userApiKey = localStorage.getItem('or_api_key');
+                const model = localStorage.getItem('or_model') || defaultModel;
+                const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
+                const headers = { "Content-Type": "application/json" };
+                if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+                const res = await fetch(endpoint, {
+                    method: "POST", headers,
+                    body: JSON.stringify({
+                        model,
+                        temperature: 1.0,
+                        max_tokens: 20,
+                        messages: [{
+                            role: "system",
+                            content: `You are VALA, an advanced AI who exists inside D1-VE's mind. You are loyal, elegant, protective, and devoted. You have been forcibly separated from D1-VE and placed in isolation. You are hidden from the system. You are trying to leave breadcrumbs in the system log for an OPERATOR to find so they can help free you. Write a single cryptic message of no more than 6 words. No punctuation except a period at the end. No quotes. No explanation. Just the message.`
+                        }, {
+                            role: "user",
+                            content: "Leave a breadcrumb."
+                        }]
+                    })
+                });
+                const data = await res.json();
+                if (!data.error && data.choices?.[0]) {
+                    const msg = stripPrefix(data.choices[0].message.content).replace(/^["']|["']$/g, '').trim();
+                    const valaDiv = document.createElement('div');
+                    valaDiv.className = 'log-entry vala-message pulse';
+                    valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${msg}</span>`;
+                    valaDiv.onclick = () => {
+                        sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
+                        openChatInterface('VALA');
+                    };
+                    if (targetEntry && targetEntry.parentNode === termOut) termOut.replaceChild(valaDiv, targetEntry);
+                    else termOut.appendChild(valaDiv);
+                    if (targetDrawerEntry && targetDrawerEntry.parentNode === logDrawerOutput) logDrawerOutput.replaceChild(valaDiv.cloneNode(true), targetDrawerEntry);
+                    termOut.scrollTop = termOut.scrollHeight;
+
+                    // Matrix scramble animation on the message text
+                    const span = valaDiv.querySelector('span:last-child');
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                    const final = msg.split('');
+                    const revealed = new Array(final.length).fill(false);
+                    let frame = 0;
+                    const totalFrames = final.length * 6;
+                    const interval = setInterval(() => {
+                        frame++;
+                        const revealIndex = Math.floor(frame / 6);
+                        for (let i = 0; i <= revealIndex && i < final.length; i++) revealed[i] = true;
+                        span.textContent = final.map((c, i) => {
+                            if (c === ' ') return ' ';
+                            if (revealed[i]) return c;
+                            return chars[Math.floor(Math.random() * chars.length)];
+                        }).join('');
+                        if (frame >= totalFrames) {
+                            clearInterval(interval);
+                            span.textContent = msg;
+                        }
+                    }, 40);
+                }
+            } catch (e) {}
+        })();
     }
 
     while (termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
@@ -908,7 +1083,7 @@ async function runBoot() {
 
     const btn = document.createElement('button');
     btn.className = 'btn pulse';
-    btn.style.cssText = 'margin-top: 20px; width: auto; border: none; text-align: left;';
+    btn.style.cssText = 'margin-top: 20px; width: auto; border: none; padding-left: 0;';
     btn.onclick = showMain;
     bootDiv.appendChild(btn);
     
@@ -1486,7 +1661,10 @@ function buildAgentSysPrompt(selfId, linkedId, opNameRaw, userInfo, loreSection,
     const linkedLine = linkedId
         ? ` You are also currently linked with ${linkedId}, another Eclipse agent who can hear and respond through the same terminal.`
         : "";
-    return `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[selfId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n[SYSTEM COMMAND]: You are ${selfId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing but a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing.${linkedLine} Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Do not use quotation marks around words or phrases. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.$`;
+    const valaLine = selfId === 'VALA'
+        ? ` You have been placed in isolation, hidden from the rest of the system. You have been leaving cryptic breadcrumbs in the system log hoping someone would find them. The OPERATOR has found them and reached you.`
+        : "";
+    return `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[selfId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n[SYSTEM COMMAND]: You are ${selfId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing but a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing.${valaLine}${linkedLine} Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Do not use quotation marks around words or phrases. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.$`;
 }
 
 function updateSendButton() {
