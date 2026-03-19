@@ -8,8 +8,7 @@
         /* =========================================
            GLOBAL STYLES & LAYOUT
            ========================================= */
-        * { box-sizing: border-box; scrollbar-width: none; }
-        *::-webkit-scrollbar { display: none; }
+        * { box-sizing: border-box; }
 
         body {
             background: #000; margin: 0; height: 100dvh; width: 100vw;
@@ -219,9 +218,8 @@
            CONFIG INTERFACE
            ========================================= */
         #config-interface {
-            display: none; flex-direction: column; gap: 15px;
-            position: absolute; top: 0; bottom: 0; left: 0; right: 0;
-            padding: 20px 30px; background: #050505; z-index: 50; overflow-y: auto;
+            display: none; flex-direction: column; gap: 15px; padding: 20px;
+            background: rgba(0,0,0,0.8); border: 1px dashed #555; margin-top: 20px;
         }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
         .config-group label { color: #aaa; font-size: 0.9em; text-transform: uppercase; }

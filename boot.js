@@ -174,10 +174,8 @@ function initSystemConfig() {
 btnOpenConfig.addEventListener('click', () => {
     sysLog("Operator accessed System Configuration.");
     setGridScrollPosition(screenEl.scrollTop);
-    mainHeader.style.display      = 'none';
     agentGrid.style.display       = 'none';
     blacksiteBanner.style.display = 'none';
-    document.getElementById('main-footer').style.display = 'none';
     btnOpenConfig.style.display   = 'none';
     screenEl.style.overflowY      = 'hidden';
     configPanel.style.display     = 'flex';
@@ -186,10 +184,8 @@ btnOpenConfig.addEventListener('click', () => {
 btnCloseConfig.addEventListener('click', () => {
     sysLog("Operator closed System Configuration.");
     configPanel.style.display     = 'none';
-    mainHeader.style.display      = 'block';
     agentGrid.style.display       = 'grid';
     blacksiteBanner.style.display = 'block';
-    document.getElementById('main-footer').style.display = 'block';
     btnOpenConfig.style.display   = 'block';
     screenEl.style.overflowY      = 'auto';
     screenEl.scrollTop            = gridScrollPosition;
