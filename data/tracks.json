@@ -1,0 +1,82 @@
+[
+  {
+    "title": "agony",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "0:53",
+    "cover": "media/cover1.jpg",
+    "src": "media/A1.agony.mp3"
+  },
+  {
+    "title": "purgatory",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "3:16",
+    "cover": "media/cover1.jpg",
+    "src": "media/A2.purgatory.mp3"
+  },
+  {
+    "title": "beware",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "2:54",
+    "cover": "media/cover1.jpg",
+    "src": "media/A3.beware.mp3"
+  },
+  {
+    "title": "sink or swim",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "3:07",
+    "cover": "media/cover1.jpg",
+    "src": "media/A4.sink or swim.mp3"
+  },
+  {
+    "title": "escape",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "2:55",
+    "cover": "media/cover1.jpg",
+    "src": "media/A5.escape.mp3"
+  },
+  {
+    "title": "alive",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "1:11",
+    "cover": "media/cover1.jpg",
+    "src": "media/B1.alive.mp3"
+  },
+  {
+    "title": "deep sleep",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "3:27",
+    "cover": "media/cover1.jpg",
+    "src": "media/B2.deep sleep.mp3"
+  },
+  {
+    "title": "breathing",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "2:36",
+    "cover": "media/cover1.jpg",
+    "src": "media/B3.breathing.mp3"
+  },
+  {
+    "title": "death is not the end",
+    "artist": "prxjectdive",
+    "album": "prxject://blacksite",
+    "duration": "3:22",
+    "cover": "media/cover1.jpg",
+    "src": "media/B4.death is not the end.mp3"
+  },
+  {
+    "title": "thoughtless",
+    "artist": "prxjectdive",
+    "album": "rxject://blacksite",
+    "duration": "2:59",
+    "cover": "media/cover1.jpg",
+    "src": "media/B5.thoughtless.mp3"
+  }
+]

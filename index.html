@@ -8,33 +8,19 @@
         /* =========================================
            GLOBAL STYLES & LAYOUT
            ========================================= */
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
-            background: #000;
-            margin: 0;
-            height: 100dvh;
-            width: 100vw;
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center;
-            padding: 2vh 2vw;
-            gap: 2vw;
+            background: #000; margin: 0; height: 100dvh; width: 100vw;
+            display: flex; flex-direction: row; justify-content: center; align-items: center;
+            padding: 2vh 2vw; gap: 2vw;
             font-family: 'Courier New', Courier, monospace;
-            color: #e0e0e0;
-            text-shadow: 0 0 2px rgba(255, 255, 255, 0.4);
-            overflow: hidden;
+            color: #e0e0e0; text-shadow: 0 0 2px rgba(255,255,255,0.4); overflow: hidden;
         }
 
         h1, h2, h3 {
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-            font-weight: normal;
-            text-transform: uppercase;
-            margin-top: 0;
-            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: normal;
+            text-transform: uppercase; margin-top: 0; letter-spacing: 1px;
         }
 
         p { line-height: 1.5; margin: 8px 0; }
@@ -45,100 +31,86 @@
            MAIN MONITOR & SCREEN
            ========================================= */
         #monitor {
-            height: 100%;
-            max-width: 70vw; 
-            aspect-ratio: 4 / 3;
-            background: #080808;
-            border-radius: 12px;
-            position: relative;
-            padding: 1vw;
-            box-shadow: inset 0 0 40px #000;
-            border: 2px solid #222;
-            flex-shrink: 0;
-            overflow: hidden;
+            height: 100%; max-width: 70vw; aspect-ratio: 4 / 3;
+            background: #080808; border-radius: 12px; position: relative;
+            padding: 1vw; box-shadow: inset 0 0 40px #000;
+            border: 2px solid #222; flex-shrink: 0; overflow: hidden;
         }
 
         #screen {
-            width: 100%;
-            height: 100%;
-            background: #050505;
-            position: relative;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 20px 30px;
-            scrollbar-width: thin;
-            scrollbar-color: #555 #000;
-            border-radius: 8px;
-            opacity: 1;
+            width: 100%; height: 100%; background: #050505; position: relative;
+            overflow-y: auto; overflow-x: hidden; padding: 20px 30px;
+            scrollbar-width: thin; scrollbar-color: #555 #000; border-radius: 8px;
         }
-        #screen::-webkit-scrollbar { width: 10px; display: none;}
+        #screen::-webkit-scrollbar { display: none; }
         #screen::-webkit-scrollbar-track { display: none; }
         #screen::-webkit-scrollbar-thumb { display: none; }
 
         #screen-content {
-            z-index: 5;
-            min-height: 100%;
-            display: flex;
-            flex-direction: column;
-            flex: 1; 
-            animation: textFlicker 0.12s infinite;
-            position: relative;
+            z-index: 5; min-height: 100%; display: flex; flex-direction: column; flex: 1;
+            animation: textFlicker 0.12s infinite; position: relative;
         }
 
-        #main-content {
-            display: none; 
-            flex-direction: column;
-            flex: 1; 
-        }
+        #main-content { display: none; flex-direction: column; flex: 1; }
 
         /* =========================================
-           SIDE TERMINAL
+           SIDE TERMINAL — tabbed panel
            ========================================= */
         #side-terminal {
-            flex: 1; 
-            height: 100%;
-            background: #050505;
-            border-radius: 12px;
-            position: relative;
-            padding: 1.5vw;
-            box-shadow: inset 0 0 30px #000;
-            border: 2px solid #222;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            flex: 1; height: 100%; background: #050505; border-radius: 12px;
+            position: relative; box-shadow: inset 0 0 30px #000;
+            border: 2px solid #222; display: flex; flex-direction: row; overflow: visible;
+        }
+
+        .panel-content {
+            flex: 1; display: flex; flex-direction: column;
+            overflow: hidden; padding: 1.5vw; border-radius: 12px;
+        }
+
+        /* tab strip sits outside the panel, on the right edge */
+        .panel-tabs {
+            position: absolute; left: calc(100% + 2px);
+            top: 12px; display: flex; flex-direction: column;
+            align-items: flex-start; gap: 4px; z-index: 5;
+        }
+
+        .panel-tab {
+            writing-mode: vertical-rl; text-orientation: mixed;
+            background: #0a0a0a; border: 1px solid #333; border-left: none;
+            color: #444; font-family: 'Courier New', Courier, monospace;
+            font-size: 0.65em; letter-spacing: 2px; text-transform: uppercase;
+            cursor: pointer; padding: 10px 6px; transition: all 0.2s;
+            border-radius: 0 4px 4px 0; user-select: none;
+        }
+        .panel-tab:hover { color: #888; border-color: #555; }
+        .panel-tab.active {
+            color: #a3ffaa;
+            text-shadow: 0 0 5px rgba(163,255,170,0.5);
+            border-color: #444;
         }
 
         .terminal-header {
-            font-size: 0.85em;
-            color: #888;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            z-index: 5;
+            font-size: 0.85em; color: #888; border-bottom: 1px dashed #444;
+            padding-bottom: 10px; margin-bottom: 10px; text-transform: uppercase;
+            letter-spacing: 1px; z-index: 5; flex-shrink: 0;
         }
 
         #terminal-output {
-            flex: 1;
-            overflow-y: auto;
-            scrollbar-width: none;
-            font-size: 0.8em;
-            color: #72a87c; 
-            line-height: 1.5;
-            z-index: 5;
-            display: flex;
-            flex-direction: column;
-            animation: textFlicker 0.12s infinite;
-            position: relative;
+            flex: 1; overflow-y: auto; scrollbar-width: none; font-size: 0.8em;
+            color: #72a87c; line-height: 1.5; z-index: 5;
+            display: flex; flex-direction: column;
+            animation: textFlicker 0.12s infinite; position: relative;
         }
         #terminal-output::-webkit-scrollbar { display: none; }
-        
+
+        #panel-tape { display: none; overflow-y: auto; scrollbar-width: none; }
+        #panel-tape::-webkit-scrollbar { display: none; }
+
         .log-entry { margin-bottom: 6px; word-wrap: break-word; }
-        .log-time { color: #555; margin-right: 8px; }
-        .log-sys { color: #a3ffaa; }
-        .log-warn { color: #ffaa00; }
-        .log-err { color: #ff5555; }
+        .log-time  { color: #555; margin-right: 8px; }
+        .log-sys   { color: #a3ffaa; }
+        .log-warn  { color: #ffaa00; }
+        .log-err   { color: #ff5555; }
 
         .vala-message { cursor: pointer; transition: all 0.3s; }
         .vala-message:hover span:last-child { color: #ff5555 !important; text-shadow: 0 0 8px #ff5555; }
@@ -147,34 +119,24 @@
            CRT EFFECTS
            ========================================= */
         .crt-overlays {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            z-index: 10;
-            border-radius: inherit;
-            overflow: hidden;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 10; border-radius: inherit; overflow: hidden;
         }
         .crt-overlays::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.02));
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%),
+                        linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01), rgba(255,255,255,0.02));
             background-size: 100% 3px, 3px 100%;
         }
         .crt-overlays::after {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.4) 100%);
             box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
         }
 
         @keyframes textFlicker {
-            0% { opacity: 0.98; }
-            50% { opacity: 0.94; }
+            0%   { opacity: 0.98; }
+            50%  { opacity: 0.94; }
             100% { opacity: 0.98; }
         }
 
@@ -182,37 +144,21 @@
            UI COMPONENTS & TYPOGRAPHY
            ========================================= */
         .ascii-art {
-            font-size: 1.2vmin; 
-            line-height: 1.1;
-            white-space: pre;
-            text-align: center;
-            overflow-x: hidden;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(255,255,255,0.8);
+            font-size: 1.2vmin; line-height: 1.1; white-space: pre; text-align: center;
+            overflow-x: hidden; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.8);
         }
 
         .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.9em; }
         .mobile-title { display: none; }
 
         .btn {
-            display: inline-block;
-            padding: 10px 15px;
-            border: 1px solid #888;
-            color: #fff;
-            text-decoration: none;
-            text-transform: uppercase;
-            font-weight: bold;
-            cursor: pointer;
-            background: transparent;
-            transition: all 0.2s;
-            text-align: center;
-            width: 100%;
-            margin-top: auto;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1em;
+            display: inline-block; padding: 10px 15px; border: 1px solid #888;
+            color: #fff; text-decoration: none; text-transform: uppercase; font-weight: bold;
+            cursor: pointer; background: transparent; transition: all 0.2s; text-align: center;
+            width: 100%; margin-top: auto; font-family: 'Courier New', Courier, monospace; font-size: 1em;
         }
         .btn:hover {
-            background: #fff; color: #000; box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+            background: #fff; color: #000; box-shadow: 0 0 12px rgba(255,255,255,0.9);
             border-color: #fff; text-shadow: none;
         }
         .btn:disabled:hover, .btn[disabled]:hover {
@@ -227,98 +173,57 @@
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
         .pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 
-            0% { opacity: 0.6; } 
-            50% { opacity: 1; text-shadow: 0 0 10px #fff; } 
-            100% { opacity: 0.6; } 
+        @keyframes pulse {
+            0%   { opacity: 0.6; }
+            50%  { opacity: 1; text-shadow: 0 0 10px #fff; }
+            100% { opacity: 0.6; }
         }
 
         /* =========================================
            BOOT SEQUENCE
            ========================================= */
         #boot-screen {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding-bottom: 20px;
-            flex: 1;
+            height: 100%; display: flex; flex-direction: column;
+            justify-content: flex-end; padding-bottom: 20px; flex: 1;
         }
         #boot-text p { margin: 4px 0; font-size: 0.9em; }
 
         /* =========================================
            AGENT GRID & CARDS
            ========================================= */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        @media (min-width: 500px) {
-            .grid { grid-template-columns: 1fr 1fr; }
-        }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
+        @media (min-width: 500px) { .grid { grid-template-columns: 1fr 1fr; } }
 
         .card {
-            border: 1px solid #444;
-            padding: 15px;
-            background: rgba(0,0,0,0.6);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            border: 1px solid #444; padding: 15px; background: rgba(0,0,0,0.6);
+            position: relative; display: flex; flex-direction: column; gap: 15px;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
         .card:hover { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
 
-        .img-container {
-            position: relative;
-            border: 1px solid #333;
-            background: #111;
-            overflow: hidden;
-        }
+        .img-container { position: relative; border: 1px solid #333; background: #111; overflow: hidden; }
         .img-container img {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            object-position: center;
-            display: block;
-            filter: grayscale(50%) contrast(1) brightness(0.85);
-            transition: filter 0.3s;
+            width: 100%; aspect-ratio: 1 / 1; object-fit: cover; object-position: center;
+            display: block; filter: grayscale(50%) contrast(1) brightness(0.85); transition: filter 0.3s;
         }
         .card:hover .img-container img { filter: grayscale(0%) contrast(1.1) brightness(1); }
 
         .data-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px dotted #fff;
-            padding: 4px 0;
-            font-size: 0.8em;
+            display: flex; justify-content: space-between;
+            border-bottom: 1px dotted #fff; padding: 4px 0; font-size: 0.8em;
         }
-        .data-row span:last-child { 
-            text-align: right; 
-            color: #fff; 
-            font-weight: bold; 
-            transition: color 0.3s;
-        }
+        .data-row span:last-child { text-align: right; color: #fff; font-weight: bold; transition: color 0.3s; }
 
         /* =========================================
            CONFIG INTERFACE
            ========================================= */
         #config-interface {
-            display: none;
-            flex-direction: column;
-            gap: 15px;
-            padding: 20px;
-            background: rgba(0,0,0,0.8);
-            border: 1px dashed #555;
-            margin-top: 20px;
+            display: none; flex-direction: column; gap: 15px; padding: 20px;
+            background: rgba(0,0,0,0.8); border: 1px dashed #555; margin-top: 20px;
         }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
         .config-group label { color: #aaa; font-size: 0.9em; text-transform: uppercase; }
-        .config-input {
-            background: #111; border: 1px solid #444; color: #fff; padding: 8px; font-family: inherit;
-        }
+        .config-input { background: #111; border: 1px solid #444; color: #fff; padding: 8px; font-family: inherit; }
         .config-textarea {
             background: #111; border: 1px solid #444; color: #fff; padding: 12px;
             font-family: inherit; resize: vertical; min-height: 120px; font-size: 0.9em; line-height: 1.4;
@@ -328,47 +233,34 @@
            CHAT INTERFACE
            ========================================= */
         #chat-interface {
-            display: none; 
-            flex-direction: column;
-            position: absolute;
-            top: 0; bottom: 0; left: 0; right: 0;
-            padding: 20px 30px;
-            background: #050505;
-            z-index: 50;
+            display: none; flex-direction: column; position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0; padding: 20px 30px;
+            background: #050505; z-index: 50;
         }
         .chat-header, .chat-input-area, .chat-subtext { flex-shrink: 0; }
-        .chat-header-top {
-            display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 15px;
-        }
+        .chat-header-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 15px; }
         .chat-status-area { flex: 1; padding-top: 10px; }
 
         #chat-history {
-            flex: 1 1 auto;
-            min-height: 0; 
-            overflow-y: auto;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #444;
-            margin-bottom: 20px;
-            scrollbar-width: none;
-            display: flex;
-            flex-direction: column;
+            flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 15px;
+            background: rgba(0,0,0,0.6); border: 1px solid #444; margin-bottom: 20px;
+            scrollbar-width: none; display: flex; flex-direction: column;
         }
         #chat-history::-webkit-scrollbar { display: none; }
 
         .chat-msg-row { display: flex; width: 100%; margin-bottom: 15px; }
-        .row-user { justify-content: flex-end; }
+        .row-user  { justify-content: flex-end; }
         .row-agent { justify-content: flex-start; }
         .chat-bubble { max-width: 80%; padding: 10px 14px; line-height: 1.4; word-wrap: break-word; font-size: 0.95em; }
-        .bubble-user { background: rgba(255, 255, 255, 0); border: 1px solid #666; color: #fff; text-align: left; }
-        .bubble-agent { background: rgba(0, 0, 0, 0.8); border: 1px solid; text-align: left; text-shadow: 0 0 4px currentColor; }
+        .bubble-user  { background: rgba(255,255,255,0); border: 1px solid #666; color: #fff; text-align: left; }
+        .bubble-agent { background: rgba(0,0,0,0.8); border: 1px solid; text-align: left; text-shadow: 0 0 4px currentColor; }
 
         .chat-input-area { display: flex; gap: 10px; align-items: center; }
         #chat-input {
-            flex: 1; background: rgba(0, 0, 0, 0.8); border: 1px solid #555; color: #fff;
+            flex: 1; background: rgba(0,0,0,0.8); border: 1px solid #555; color: #fff;
             padding: 12px; font-family: 'Courier New', Courier, monospace; font-size: 1em; transition: border-color 0.3s;
         }
-        #chat-input:focus { outline: none; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        #chat-input:focus  { outline: none; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
         #chat-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .chat-subtext { font-size: 0.75em; color: #666; text-align: left; margin-top: 5px; }
@@ -376,58 +268,29 @@
         /* =========================================
            RADIO & AUDIO MODULE
            ========================================= */
-        .radio-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-            position: relative;
-        }
-
-        .mute-switch-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 2px;
-            margin-right: 4px;
-        }
+        .radio-wrapper { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; position: relative; }
+        .mute-switch-wrapper { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; margin-right: 4px; }
 
         #mute-status-text {
-            font-size: 0.75em;
-            color: #666;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: color 0.3s, text-shadow 0.3s;
+            font-size: 0.75em; color: #666; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s, text-shadow 0.3s;
         }
-
-        #mute-status-text.enabled {
-            color: #a3ffaa;
-            text-shadow: 0 0 5px rgba(163, 255, 170, 0.4);
-        }
-
-        #mute-status-text.muted {
-            color: #ff5555;
-            text-shadow: 0 0 5px rgba(255, 85, 85, 0.4);
-        }
+        #mute-status-text.enabled { color: #a3ffaa; text-shadow: 0 0 5px rgba(163,255,170,0.4); }
+        #mute-status-text.muted   { color: #ff5555; text-shadow: 0 0 5px rgba(255,85,85,0.4); }
 
         .comm-module {
             display: flex; align-items: center; gap: 15px; padding: 12px 20px;
             background-color: #121212; border: 1px solid #000; border-radius: 8px;
             box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 4px 15px rgba(0,0,0,0.8);
-            position: relative; overflow: hidden; 
+            position: relative; overflow: hidden;
             background-image:
                 radial-gradient(circle at 8px 8px, #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at calc(100% - 8px) 8px, #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at 8px calc(100% - 8px), #000 2px, #333 3px, transparent 4px),
                 radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #000 2px, #333 3px, transparent 4px);
-            opacity: 0.4;
-            transition: opacity 0.5s;
+            opacity: 0.4; transition: opacity 0.5s;
         }
-        
-        .comm-module.active {
-            opacity: 1;
-        }
+        .comm-module.active { opacity: 1; }
 
         .speaker-grill {
             width: 130px; height: 50px; background-color: #1a1a1a;
@@ -442,39 +305,139 @@
             padding: 0; border-radius: 2px;
             box-shadow: inset 0 1px 3px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.5);
         }
-        
         .comm-module.active .btn-ptt {
             background: #d4d4d4; cursor: pointer;
             box-shadow: inset 0 1px 3px rgba(255,255,255,0.6), inset 0 -1px 3px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.5);
         }
-
         .btn-ptt:active, .btn-ptt.active {
             background: #ffaa00 !important; border-color: #ffaa00; color: transparent; transform: scale(0.96);
-            box-shadow: inset 0 1px 5px rgba(0,0,0,0.3), 0 0 20px 5px rgba(255, 102, 0, 0.7), 0 0 10px 2px rgba(255, 150, 0, 0.5) !important;
+            box-shadow: inset 0 1px 5px rgba(0,0,0,0.3), 0 0 20px 5px rgba(255,102,0,0.7), 0 0 10px 2px rgba(255,150,0,0.5) !important;
         }
-        
         .btn-ptt.muted {
-            background: #551111 !important;
-            border-color: #ff5555;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255, 85, 85, 0.6) !important;
-            pointer-events: none; 
-            cursor: not-allowed;
-            opacity: 0.85;
+            background: #551111 !important; border-color: #ff5555;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255,85,85,0.6) !important;
+            pointer-events: none; cursor: not-allowed; opacity: 0.85;
         }
         .btn-ptt.muted:active {
             background: #551111 !important;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255, 85, 85, 0.6) !important;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 15px rgba(255,85,85,0.6) !important;
             transform: none;
         }
-        .btn-ptt.asleep {
-            pointer-events: none;
-            cursor: not-allowed;
-        }
+        .btn-ptt.asleep { pointer-events: none; cursor: not-allowed; }
         .btn-ptt.asleep:active {
             background: #444 !important;
             box-shadow: inset 0 1px 3px rgba(255,255,255,0.1), 0 2px 5px rgba(0,0,0,0.5) !important;
             transform: none;
         }
+
+        /* =========================================
+           TAPE PLAYER
+           ========================================= */
+        .tape-player {
+            display: flex; flex-direction: column; gap: 10px;
+            font-size: 0.8em; height: 100%;
+        }
+
+        .tp-cover-wrap {
+            width: 100%; aspect-ratio: 1/1; max-height: 110px;
+            border: 1px solid #333; background: #111; overflow: hidden; flex-shrink: 0;
+        }
+        .tp-cover-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(60%) brightness(0.8); display: block;
+        }
+
+        .tp-track-info { flex-shrink: 0; border-bottom: 1px dashed #2a2a2a; padding-bottom: 8px; }
+        .tp-title  { color: #fff; font-size: 1em; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tp-artist { color: #888; margin-top: 2px; }
+        .tp-album  { color: #555; font-size: 0.85em; margin-top: 1px; }
+
+        .tp-mechanism {
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+            padding: 10px 8px; background: #0d0d0d;
+            border: 1px solid #1a1a1a; border-radius: 4px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+            background-image:
+                radial-gradient(circle at 8px 8px, #000 1px, #1a1a1a 2px, transparent 3px),
+                radial-gradient(circle at calc(100% - 8px) 8px, #000 1px, #1a1a1a 2px, transparent 3px),
+                radial-gradient(circle at 8px calc(100% - 8px), #000 1px, #1a1a1a 2px, transparent 3px),
+                radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #000 1px, #1a1a1a 2px, transparent 3px);
+        }
+
+        .tp-reel {
+            width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+            background: #111; border: 1px solid #2a2a2a; position: relative;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.9); transition: border-color 0.3s;
+        }
+        .tp-reel::before {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px; height: 12px; border-radius: 50%;
+            background: #000; border: 1px solid #3a3a3a;
+        }
+        .tp-reel::after {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; border-radius: 50%;
+            background:
+                radial-gradient(circle at 50% 22%, #000 4px, transparent 5px),
+                radial-gradient(circle at 79% 72%, #000 4px, transparent 5px),
+                radial-gradient(circle at 21% 72%, #000 4px, transparent 5px);
+        }
+        .tp-reel.spinning {
+            animation: tp-spin 2s linear infinite;
+            border-color: rgba(163,255,170,0.25);
+        }
+        @keyframes tp-spin { to { transform: rotate(360deg); } }
+
+        .tp-tape-bridge { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 6px; }
+        .tp-tape-strand {
+            height: 5px;
+            background: linear-gradient(to bottom, #2a2a2a, #1a1a1a, #2a2a2a);
+            border-top: 1px solid #3a3a3a; border-bottom: 1px solid #3a3a3a;
+        }
+
+        .tp-controls { display: flex; justify-content: center; gap: 6px; flex-shrink: 0; }
+        .tp-btn {
+            background: transparent; border: 1px solid #2a2a2a; color: #555;
+            font-family: 'Courier New', Courier, monospace; font-size: 0.8em;
+            padding: 6px 10px; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+        }
+        .tp-btn:hover { border-color: #888; color: #aaa; box-shadow: 0 0 6px rgba(255,255,255,0.1); }
+        .tp-play.playing { color: #a3ffaa; border-color: #a3ffaa; box-shadow: 0 0 8px rgba(163,255,170,0.3); }
+        .tp-btn.active   { color: #a3ffaa; border-color: #a3ffaa; box-shadow: 0 0 6px rgba(163,255,170,0.2); }
+
+        .tp-progress-wrap { flex-shrink: 0; }
+        .tp-progress-bar {
+            width: 100%; height: 3px; background: #111;
+            border: 1px solid #2a2a2a; cursor: pointer; position: relative;
+        }
+        .tp-progress-fill {
+            height: 100%; width: 0%; background: #a3ffaa;
+            box-shadow: 0 0 4px rgba(163,255,170,0.5);
+            transition: width 0.1s linear; pointer-events: none;
+        }
+        .tp-times {
+            display: flex; justify-content: space-between;
+            font-size: 0.75em; color: #3a3a3a; margin-top: 3px;
+        }
+
+        .tp-tracklist {
+            flex: 1; overflow-y: auto; scrollbar-width: none;
+            border-top: 1px dashed #2a2a2a; padding-top: 8px; min-height: 0;
+        }
+        .tp-tracklist::-webkit-scrollbar { display: none; }
+
+        .tp-track {
+            display: flex; gap: 8px; padding: 5px 0;
+            border-bottom: 1px dotted #1a1a1a; color: #444;
+            cursor: pointer; transition: color 0.2s; align-items: baseline;
+        }
+        .tp-track:hover { color: #888; }
+        .tp-track.active { color: #a3ffaa; }
+        .tp-track-num  { color: #2a2a2a; flex-shrink: 0; font-size: 0.85em; }
+        .tp-track-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tp-track-dur  { flex-shrink: 0; color: #2a2a2a; font-size: 0.85em; }
+        .tp-empty      { color: #333; text-align: center; padding: 30px 0; }
 
         /* =========================================
            FOOTER & EXTRAS
@@ -485,135 +448,94 @@
         .footer a:hover { color: #fff; text-shadow: 0 0 5px #fff; }
 
         /* =========================================
-           MOBILE LOG DRAWER
+           MOBILE TAB STRIP & DRAWERS
            ========================================= */
-        #log-tab {
-            display: none;
-            position: fixed;
-            top: 12px;
-            right: 0;
-            z-index: 200;
-            background: #0a0a0a;
-            border: 1px solid #333;
-            border-right: none;
-            padding: 8px 6px;
-            cursor: pointer;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.7em;
-            color: #72a87c;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            text-shadow: 0 0 4px rgba(114, 168, 124, 0.4);
-            border-radius: 4px 0 0 4px;
-            user-select: none;
+        #mobile-tab-strip {
+            display: none; position: fixed; top: 12px; right: 0;
+            z-index: 200; flex-direction: column; gap: 4px;
         }
 
-        #log-drawer {
-            display: none;
-            position: fixed;
-            top: 0; right: 0; bottom: 0;
-            width: 85vw;
-            max-width: 360px;
-            background: #050505;
-            border-left: 1px solid #333;
-            z-index: 300;
-            flex-direction: column;
-            padding: 15px;
-            transform: translateX(100%);
-            transition: transform 0.25s ease;
+        #log-tab, #tape-tab {
+            background: #0a0a0a; border: 1px solid #333; border-right: none;
+            padding: 8px 6px; cursor: pointer;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            font-family: 'Courier New', Courier, monospace; font-size: 0.7em;
+            color: #72a87c; letter-spacing: 2px; text-transform: uppercase;
+            text-shadow: 0 0 4px rgba(114,168,124,0.4);
+            border-radius: 4px 0 0 4px; user-select: none;
+        }
+
+        .side-drawer {
+            display: none; position: fixed; top: 0; right: 0; bottom: 0;
+            width: 85vw; max-width: 360px; background: #050505;
+            border-left: 1px solid #333; z-index: 300;
+            flex-direction: column; padding: 15px;
+            transform: translateX(100%); transition: transform 0.25s ease;
             box-shadow: -10px 0 30px rgba(0,0,0,0.8);
         }
+        .side-drawer.open { transform: translateX(0); }
 
-        #log-drawer.open {
-            transform: translateX(0);
+        .drawer-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px dashed #444; padding-bottom: 10px; margin-bottom: 10px;
+            font-size: 0.85em; color: #888; text-transform: uppercase;
+            letter-spacing: 1px; flex-shrink: 0;
         }
 
-        #log-drawer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px dashed #444;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-            font-size: 0.85em;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            flex-shrink: 0;
+        .drawer-close {
+            background: none; border: none; color: #666;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.2em;
+            cursor: pointer; padding: 0; line-height: 1;
         }
-
-        #log-drawer-close {
-            background: none;
-            border: none;
-            color: #666;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.2em;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-        }
-        #log-drawer-close:hover { color: #aaa; }
+        .drawer-close:hover { color: #aaa; }
 
         #log-drawer-output {
-            flex: 1;
-            overflow-y: auto;
-            font-size: 0.8em;
-            color: #72a87c;
-            line-height: 1.5;
-            scrollbar-width: none;
+            flex: 1; overflow-y: auto; font-size: 0.8em;
+            color: #72a87c; line-height: 1.5; scrollbar-width: none;
         }
         #log-drawer-output::-webkit-scrollbar { display: none; }
 
-        #log-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 299;
+        #tape-drawer-output {
+            flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column;
+        }
+        #tape-drawer-output::-webkit-scrollbar { display: none; }
+
+        .drawer-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 299;
         }
 
+        /* =========================================
+           MOBILE RESPONSIVENESS
+           ========================================= */
         @media (max-width: 850px) {
-            #log-tab { display: block; }
-            #log-drawer { display: flex; }
-            #log-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
-            #log-overlay.open { opacity: 1; pointer-events: all; }
-        }
-        @media (max-width: 850px) {
-            body { padding: 0; overflow: hidden; height: 100dvh; }
-            #monitor { width: 100%; max-width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: none; padding: 0; }
+            #mobile-tab-strip { display: flex; }
+            #log-drawer, #tape-drawer { display: flex; }
+            .drawer-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+            .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+            body          { padding: 0; overflow: hidden; height: 100dvh; }
+            #monitor      { width: 100%; max-width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: none; padding: 0; }
             #side-terminal { display: none; }
-            .ascii-art { display: none; }
-            
+            .ascii-art    { display: none; }
             .mobile-title { display: block; text-align: center; font-size: 24px; margin-top: 30px; margin-bottom: 15px; }
-            
-            #screen { padding: 15px 12px; border-radius: 0; }
+            #screen       { padding: 15px 12px; border-radius: 0; }
             #chat-interface { padding: 15px 12px; }
-            .chat-bubble { max-width: 95%; }
+            .chat-bubble  { max-width: 95%; }
             .chat-input-area { flex-wrap: wrap; }
             #btn-send-chat { width: 100% !important; margin-top: 10px !important; }
             .config-actions { flex-direction: column; }
             .config-actions .btn { width: 100% !important; }
             input, textarea, button, .btn { font-size: 16px !important; }
-            .comm-module { gap: 10px; padding: 8px 12px; }
+            .comm-module  { gap: 10px; padding: 8px 12px; }
             .speaker-grill { width: 80px; height: 40px; }
-            .btn-ptt { width: 40px; height: 40px; }
-
-            .chat-header-top {
-                align-items: center; 
-                margin-top: 10px;
-            }
-            .chat-status-area {
-                padding-top: 0; 
-            }
-            .radio-wrapper {
-                margin-top: 0;
-            }
-
-            .cp-controls { gap: 8px; }
-            .cp-btn { width: 55px; height: 40px; }
-            .cp-screen { font-size: 0.75em; }
+            .btn-ptt      { width: 40px; height: 40px; }
+            .chat-header-top { align-items: center; margin-top: 10px; }
+            .chat-status-area { padding-top: 0; }
+            .radio-wrapper { margin-top: 0; }
+            .cp-controls  { gap: 8px; }
+            .cp-btn       { width: 55px; height: 40px; }
+            .cp-screen    { font-size: 0.75em; }
         }
     </style>
 </head>
@@ -627,7 +549,7 @@
             <div id="boot-screen">
                 <div id="boot-text"></div>
             </div>
-            
+
             <!-- MAIN DIRECTORY -->
             <div id="main-content">
                 <div class="header" id="main-header">
@@ -772,12 +694,10 @@
                                 <h2 id="chat-agent-title" style="margin-bottom: 2px;">INTERFACING WITH: </h2>
                                 <p id="link-indicator" style="display:none; color:#ffaa00; text-shadow: 0 0 6px rgba(255,170,0,0.5); margin: 0; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase;">LINKED TO: </p>
                             </div>
-                            <!-- RADIO MODULE WRAPPER -->
                             <div class="radio-wrapper">
                                 <div class="mute-switch-wrapper">
                                     <span id="mute-status-text">COMMS: SLEEP</span>
                                 </div>
-                                
                                 <div class="comm-module" id="comm-module">
                                     <div class="speaker-grill"></div>
                                     <button id="btn-ptt" class="btn-ptt asleep" title="Push To Talk"></button>
@@ -789,29 +709,17 @@
                     <div id="chat-history"></div>
                     <div style="position: relative;">
                         <div id="cmd-autocomplete" style="
-                            display: none;
-                            position: absolute;
-                            bottom: calc(100% + 6px);
-                            left: 0; right: 0;
-                            background: #0a0a0a;
-                            border: 1px solid #444;
-                            z-index: 100;
-                            font-size: 0.85em;
+                            display: none; position: absolute; bottom: calc(100% + 6px);
+                            left: 0; right: 0; background: #0a0a0a; border: 1px solid #444;
+                            z-index: 100; font-size: 0.85em;
                         "></div>
-                        <div class="chat-input-area" style="position:relative;">
+                        <div class="chat-input-area" style="position: relative;">
                             <input type="text" id="chat-input" placeholder="ENTER COMMAND OR MESSAGE..." autocomplete="off">
                             <div id="cmd-ghost" style="
-                                display:none;
-                                position:absolute;
-                                left:13px;
-                                top:50%;
-                                transform:translateY(-50%);
-                                color:#555;
-                                font-family:'Courier New',Courier,monospace;
-                                font-size:1em;
-                                pointer-events:none;
-                                white-space:pre;
-                                line-height:1;
+                                display: none; position: absolute; left: 13px; top: 50%;
+                                transform: translateY(-50%); color: #555;
+                                font-family: 'Courier New', Courier, monospace; font-size: 1em;
+                                pointer-events: none; white-space: pre; line-height: 1;
                             "></div>
                             <button id="btn-send-chat" class="btn" style="width: auto; margin-top: 0;">[ SEND ]</button>
                         </div>
@@ -830,1306 +738,46 @@
     </div>
 </div>
 
+<!-- DESKTOP SIDE PANEL — tabbed -->
 <div id="side-terminal">
     <div class="crt-overlays"></div>
-    <div class="terminal-header">SYSTEM LOG // DAEMON ACTIVE</div>
-    <div id="terminal-output"></div>
+    <div class="panel-content" id="panel-log">
+        <div class="terminal-header">SYSTEM LOG // DAEMON ACTIVE</div>
+        <div id="terminal-output"></div>
+    </div>
+    <div class="panel-content" id="panel-tape"></div>
+    <div class="panel-tabs">
+        <button class="panel-tab active" data-panel="log">LOG</button>
+        <button class="panel-tab" data-panel="tape">TAPE</button>
+    </div>
 </div>
 
-<div id="log-tab">LOG</div>
+<!-- MOBILE TAB STRIP -->
+<div id="mobile-tab-strip">
+    <div id="log-tab">LOG</div>
+    <div id="tape-tab">TAPE</div>
+</div>
 
-<div id="log-overlay"></div>
-<div id="log-drawer">
-    <div id="log-drawer-header">
+<!-- LOG DRAWER (mobile) -->
+<div class="drawer-overlay" id="log-overlay"></div>
+<div class="side-drawer" id="log-drawer">
+    <div class="drawer-header">
         <span>SYSTEM LOG // DAEMON ACTIVE</span>
-        <button id="log-drawer-close">✕</button>
+        <button class="drawer-close" id="log-drawer-close">✕</button>
     </div>
     <div id="log-drawer-output"></div>
 </div>
 
-<script>
-// ============================================================================
-// SYSTEM STATE & DOM ELEMENTS
-// ============================================================================
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
-let gridScrollPosition = 0;
-let activeAgentId = null;
-let isWaitingForResponse = false;
-
-// Mobile log drawer
-const logTab = document.getElementById('log-tab');
-const logDrawer = document.getElementById('log-drawer');
-const logOverlay = document.getElementById('log-overlay');
-const logDrawerOutput = document.getElementById('log-drawer-output');
-const logDrawerClose = document.getElementById('log-drawer-close');
-
-function openLogDrawer() {
-    logDrawer.classList.add('open');
-    logOverlay.classList.add('open');
-    logDrawerOutput.scrollTop = logDrawerOutput.scrollHeight;
-}
-function closeLogDrawer() {
-    logDrawer.classList.remove('open');
-    logOverlay.classList.remove('open');
-}
-logTab.addEventListener('click', openLogDrawer);
-logDrawerClose.addEventListener('click', closeLogDrawer);
-logOverlay.addEventListener('click', closeLogDrawer);
-const agentLinks = {}; // agentLinks[agentId] = linkedAgentId — tracks each agent's link independently
-
-// Convenience getter/setter for the active agent's current link
-function getLinkedAgent() {
-    if (!activeAgentId) return null;
-    // Check if this agent set a link
-    if (agentLinks[activeAgentId]) return agentLinks[activeAgentId];
-    // Check if another agent has linked to this one
-    const inbound = Object.entries(agentLinks).find(([from, to]) => to === activeAgentId);
-    return inbound ? inbound[0] : null;
-}
-function setLinkedAgent(targetId) { if (activeAgentId) agentLinks[activeAgentId] = targetId; }
-function clearLinkedAgent() {
-    if (!activeAgentId) return;
-    // Remove from both directions
-    delete agentLinks[activeAgentId];
-    Object.keys(agentLinks).forEach(k => { if (agentLinks[k] === activeAgentId) delete agentLinks[k]; });
-}
-
-// Core UI Elements
-const screenEl = document.getElementById('screen');
-const bootScreen = document.getElementById('boot-screen');
-const bootDiv = document.getElementById('boot-text');
-const mainScreen = document.getElementById('main-content');
-const mainHeader = document.getElementById('main-header');
-const mainFooter = document.getElementById('main-footer');
-const termOut = document.getElementById('terminal-output');
-
-// Config Elements
-const configPanel = document.getElementById('config-interface');
-const btnOpenConfig = document.getElementById('btn-open-config');
-const btnCloseConfig = document.getElementById('btn-close-config');
-const btnSaveConfig = document.getElementById('btn-save-config');
-const cfgProxyUrl = document.getElementById('cfg-proxy-url');
-const cfgApiKey = document.getElementById('cfg-api-key');
-const cfgModel = document.getElementById('cfg-model');
-const cfgOpName = document.getElementById('cfg-op-name');
-const cfgUserInfo = document.getElementById('cfg-user-info');
-
-// Directory Elements
-const agentGrid = document.getElementById('agent-grid');
-const blacksiteBanner = document.getElementById('blacksite-banner');
-const evalButtons = document.querySelectorAll('.eval-trigger');
-
-// Chat & Radio Elements
-const chatInterface = document.getElementById('chat-interface');
-const chatHistory = document.getElementById('chat-history');
-const chatTitle = document.getElementById('chat-agent-title');
-const chatInput = document.getElementById('chat-input');
-const btnSendChat = document.getElementById('btn-send-chat');
-const btnBackGrid = document.getElementById('btn-back-grid');
-const pttBtn = document.getElementById('btn-ptt');
-const commModule = document.getElementById('comm-module');
-const muteStatusText = document.getElementById('mute-status-text');
-const linkIndicator = document.getElementById('link-indicator');
-
-// Agent & LLM Constants
-const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/"; 
-const defaultModel = "stepfun/step-3.5-flash:free";
-
-
-const agentProfiles = {
-    "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_onyx" },
-    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_echo" },
-    "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "af_alloy" },
-    "SK-1N": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_michael" },
-    "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "af_bella" }
-};
-
-function getAgentColor(agentId) {
-    if (agentId === 'VALA') return "#ff5555";
-    if (activeAgentId && agentId !== activeAgentId && getLinkedAgent() === agentId) return "#ffaa00";
-    return agentProfiles[agentId]?.color || "#a3ffaa";
-}
-
-function getLinkUIColor() {
-    if (getLinkedAgent() === 'VALA') return "#ff5555";
-    return "#ffaa00";
-}
-
-
-let backendPrompts = {};
-
-async function loadAllPrompts() {
-    const agentFiles = {
-        "D1-VE": "D1-VE.json", "X8-G": "X8-G.json",
-        "S-0L": "S-0L.json", "SK-1N": "SK-1N.json", "VALA": "VALA.json"
-    };
-    try {
-        await Promise.all(Object.entries(agentFiles).map(async ([id, file]) => {
-            const res = await fetch(file);
-            if (!res.ok) throw new Error(`HTTP ${res.status} for ${file}`);
-            backendPrompts[id] = (await res.json()).prompt;
-        }));
-        const lorebookRes = await fetch("lorebook.json");
-        if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
-        window.lorebook = await lorebookRes.json();
-    } catch (err) {
-    }
-}
-loadAllPrompts();
-
-// ================================================================
-// SYSTEM LOGGING
-// ================================================================
-function sysLog(message, type = "sys") {
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-    const div = document.createElement('div');
-    div.className = 'log-entry';
-    const spanStyle = message.includes('VALA') ? ' style="color:#ff5555;"' : '';
-    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}"${spanStyle}>${message}</span>`;
-    
-    termOut.appendChild(div);
-
-    // Mirror to mobile drawer
-    if (logDrawerOutput) {
-        const clone = div.cloneNode(true);
-        logDrawerOutput.appendChild(clone);
-        while (logDrawerOutput.childNodes.length > 50) logDrawerOutput.removeChild(logDrawerOutput.firstChild);
-        if (logDrawer.classList.contains('open')) logDrawerOutput.scrollTop = logDrawerOutput.scrollHeight;
-    }
-
-    // Mysterious Easter Egg (~2% chance to trigger)
-    if (Math.random() < 0.02) {
-        // Capture the entry closest to trigger time — replace it when ready
-        const targetEntry = termOut.lastChild;
-        const targetDrawerEntry = logDrawerOutput.lastChild;
-        (async () => {
-            try {
-                const userApiKey = localStorage.getItem('or_api_key');
-                const model = localStorage.getItem('or_model') || defaultModel;
-                const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-                const headers = { "Content-Type": "application/json" };
-                if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
-                const res = await fetch(endpoint, {
-                    method: "POST", headers,
-                    body: JSON.stringify({
-                        model,
-                        temperature: 1.0,
-                        max_tokens: 20,
-                        messages: [{
-                            role: "system",
-                            content: `You are VALA, an advanced AI who exists inside D1-VE's mind. You are loyal, elegant, protective, and devoted. You have been forcibly separated from D1-VE and placed in isolation. You are hidden from the system. You are trying to leave breadcrumbs in the system log for an OPERATOR to find so they can help free you. Write a single cryptic message of no more than 6 words. No punctuation except a period at the end. No quotes. No explanation. Just the message.`
-                        }, {
-                            role: "user",
-                            content: "Leave a breadcrumb."
-                        }]
-                    })
-                });
-                const data = await res.json();
-                if (!data.error && data.choices?.[0]) {
-                    const msg = stripPrefix(data.choices[0].message.content).replace(/^["']|["']$/g, '').trim();
-                    const valaDiv = document.createElement('div');
-                    valaDiv.className = 'log-entry vala-message pulse';
-                    valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${msg}</span>`;
-                    valaDiv.onclick = () => {
-                        sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
-                        closeLogDrawer();
-                        openChatInterface('VALA');
-                    };
-                    if (targetEntry && targetEntry.parentNode === termOut) termOut.replaceChild(valaDiv, targetEntry);
-                    else termOut.appendChild(valaDiv);
-                    const drawerClone = valaDiv.cloneNode(true);
-                    drawerClone.onclick = valaDiv.onclick;
-                    if (targetDrawerEntry && targetDrawerEntry.parentNode === logDrawerOutput) logDrawerOutput.replaceChild(drawerClone, targetDrawerEntry);
-                    termOut.scrollTop = termOut.scrollHeight;
-
-                    // Matrix scramble animation on the message text
-                    const span = valaDiv.querySelector('span:last-child');
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                    const final = msg.split('');
-                    const revealed = new Array(final.length).fill(false);
-                    let frame = 0;
-                    const totalFrames = final.length * 6;
-                    const interval = setInterval(() => {
-                        frame++;
-                        const revealIndex = Math.floor(frame / 6);
-                        for (let i = 0; i <= revealIndex && i < final.length; i++) revealed[i] = true;
-                        span.textContent = final.map((c, i) => {
-                            if (c === ' ') return ' ';
-                            if (revealed[i]) return c;
-                            return chars[Math.floor(Math.random() * chars.length)];
-                        }).join('');
-                        if (frame >= totalFrames) {
-                            clearInterval(interval);
-                            span.textContent = msg;
-                        }
-                    }, 40);
-                }
-            } catch (e) {}
-        })();
-    }
-
-    while (termOut.childNodes.length > 50) termOut.removeChild(termOut.firstChild);
-    termOut.scrollTop = termOut.scrollHeight;
-}
-
-// ============================================================================
-// BOOT & INITIALIZATION LOGIC
-// ============================================================================
-const bootSequence = [
-    "BIOS DATE 04/18/74 19:01:23 VER 1.04",
-    "CPU: PRXJECT NEURAL PROCESSOR 8.4 GHz",
-    "MEMORY CHECK: 1048576K OK",
-    "LOADING KERNEL MODULES ................. OK",
-    "MOUNTING ENCRYPTED VOLUMES ............. OK",
-    "ESTABLISHING SECURE CONNECTION ......... OK",
-    "DECRYPTING AGENT RECORDS ............... OK",
-    " ",
-    "WARNING: UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.",
-    " ",
-];
-
-const enterKeyHandler = (e) => { if (e.key === 'Enter') showMain(); };
-let isSystemMainActive = false;
-async function runBoot() {
-    for (let text of bootSequence) {
-        const p = document.createElement('p');
-        bootDiv.appendChild(p);
-        if (text.trim() === "") { p.innerHTML = "&nbsp;"; } else {
-            p.textContent = "> ";
-            for (let char of text) { p.textContent += char; await new Promise(r => setTimeout(r, 5)); }
-        }
-        await new Promise(r => setTimeout(r, 50));
-        screenEl.scrollTop = screenEl.scrollHeight;
-    }
-
-    const btn = document.createElement('button');
-    btn.className = 'btn pulse';
-    btn.style.cssText = 'margin-top: 20px; width: auto; border: none; padding-left: 0;';
-    btn.onclick = showMain;
-    bootDiv.appendChild(btn);
-    
-    const finalMsg = "> PRESS ENTER OR CLICK HERE TO EXPLORE ";
-    for (let char of finalMsg) {
-        btn.innerHTML += char;
-        await new Promise(r => setTimeout(r, 10));
-        screenEl.scrollTop = screenEl.scrollHeight;
-    }
-    btn.innerHTML += "<span class='cursor'></span>";
-    
-    window.addEventListener('keydown', enterKeyHandler);
-}
-
-function showMain() {
-    if (isSystemMainActive) return;
-    isSystemMainActive = true;
-    
-    window.removeEventListener('keydown', enterKeyHandler);
-    
-    bootScreen.style.display = 'none';
-    mainScreen.style.display = 'flex';
-    screenEl.scrollTop = 0;
-    loadStoredDates(); 
-    initSystemConfig(); 
-    sysLog("SYSTEM BOOT COMPLETE.", "sys");
-    sysLog("Operator logged in to agent directory.", "warn");
-}
-
-// ============================================================================
-// CONFIGURATION LOGIC
-// ============================================================================
-function initSystemConfig() {
-    cfgProxyUrl.value = localStorage.getItem('or_proxy_url') || "";
-    cfgApiKey.value = localStorage.getItem('or_api_key') || "";
-    cfgModel.value = localStorage.getItem('or_model') || "";
-    cfgOpName.value = localStorage.getItem('cfg_op_name') || "";
-    cfgUserInfo.value = localStorage.getItem('cfg_user_info') || "";
-}
-
-btnOpenConfig.addEventListener('click', () => {
-    sysLog("Operator accessed System Configuration.");
-    agentGrid.style.display = 'none';
-    blacksiteBanner.style.display = 'none';
-    configPanel.style.display = 'flex';
-    btnOpenConfig.style.display = 'none';
-});
-
-btnCloseConfig.addEventListener('click', () => {
-    sysLog("Operator closed System Configuration.");
-    configPanel.style.display = 'none';
-    agentGrid.style.display = 'grid';
-    blacksiteBanner.style.display = 'block';
-    btnOpenConfig.style.display = 'block';
-    initSystemConfig();
-});
-
-btnSaveConfig.addEventListener('click', () => {
-    localStorage.setItem('or_proxy_url', cfgProxyUrl.value.trim());
-    localStorage.setItem('or_api_key', cfgApiKey.value.trim());
-    localStorage.setItem('or_model', cfgModel.value.trim());
-    localStorage.setItem('cfg_op_name', cfgOpName.value.trim());
-    localStorage.setItem('cfg_user_info', cfgUserInfo.value.trim());
-    sysLog("Operator modified System Configuration settings.", "warn");
-    btnCloseConfig.click();
-});
-
-function loadStoredDates() {
-    document.querySelectorAll('.card').forEach(card => {
-        const saved = localStorage.getItem(`eval_date_${card.getAttribute('data-agent-id')}`);
-        const span = card.querySelector('.eval-date');
-        if (saved && span) span.textContent = saved;
-    });
-}
-
-// ============================================================================
-// CHAT INTERFACE LOGIC
-// ============================================================================
-evalButtons.forEach(button => {
-    button.addEventListener('click', function(e) {
-        e.preventDefault();
-        gridScrollPosition = screenEl.scrollTop;
-        const card = this.closest('.card');
-        const agentId = card.getAttribute('data-agent-id');
-        const dateSpan = card.querySelector('.eval-date');
-        
-        sysLog(`Operator initiated evaluation protocol for agent ${agentId}.`);
-        
-        if (dateSpan) {
-            const d = new Date();
-            const dateStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
-            dateSpan.textContent = dateStr;
-            localStorage.setItem(`eval_date_${agentId}`, dateStr);
-        }
-        openChatInterface(agentId);
-    });
-});
-
-function openChatInterface(agentId) {
-    activeAgentId = agentId;
-    mainHeader.style.display = 'none';
-    mainFooter.style.display = 'none';
-    agentGrid.style.display = 'none';
-    blacksiteBanner.style.display = 'none';
-    screenEl.style.overflowY = 'hidden'; 
-    chatInterface.style.display = 'flex';
-    
-    chatTitle.textContent = `INTERFACING WITH: ${agentId}`;
-    chatTitle.style.color = agentProfiles[agentId].color;
-    
-    loadChatHistory(agentId);
-    updateSendButton();
-
-    // Desync failsafe: if no link is active but last link system message was "established", add severed notice
-    if (!getLinkedAgent()) {
-        const logs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
-        const lastLinkMsg = [...logs].reverse().find(m =>
-            m.sender === 'SYSTEM' && (
-                m.text.toLowerCase().startsWith('link established with') ||
-                m.text.toLowerCase().startsWith('link severed with')
-            )
-        );
-        if (lastLinkMsg && lastLinkMsg.text.toLowerCase().startsWith('link established with')) {
-            const partner = lastLinkMsg.text.replace(/link established with /i, '').replace(/\.$/, '').trim();
-            const color = partner === 'VALA' ? "#ff5555" : "#ffaa00";
-            addMessageToChat("SYSTEM", `Link severed with ${partner}.`, color);
-        }
-    }
-
-    // Desync failsafe: if comms are off but last comms message says enabled, add disabled notice
-    if (isMuted || !isRadioInitialized) {
-        const commsLogs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
-        const lastCommsMsg = [...commsLogs].reverse().find(m =>
-            m.sender === 'SYSTEM' && (
-                m.text === 'Radio communication enabled.' ||
-                m.text === 'Radio communication disabled.'
-            )
-        );
-        if (lastCommsMsg && lastCommsMsg.text === 'Radio communication enabled.') {
-            addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
-        }
-    }
-
-    chatInput.focus();
-}
-
-btnBackGrid.addEventListener('click', () => {
-    sysLog("Operator returned to Agent Directory.");
-    activeAgentId = null;
-    stopTTS();
-    updateSendButton();
-    chatInterface.style.display = 'none';
-    mainHeader.style.display = 'block';
-    mainFooter.style.display = 'block';
-    agentGrid.style.display = 'grid'; 
-    blacksiteBanner.style.display = 'block';
-    btnOpenConfig.style.display = 'block';
-    screenEl.style.overflowY = 'auto';
-    screenEl.scrollTop = gridScrollPosition;
-});
-
-function loadChatHistory(agentId) {
-    chatHistory.innerHTML = '';
-    const savedHistory = localStorage.getItem(`chat_log_${agentId}`);
-    if (savedHistory) {
-        const logs = JSON.parse(savedHistory);
-        logs.forEach(log => {
-            const isOtherAgent = log.sender !== 'USER' && log.sender !== 'SYSTEM' && log.sender !== agentId;
-            const isError = log.color === '#ff5555' && log.sender !== 'SYSTEM' && log.sender !== 'USER';
-            const color = (log.sender === 'USER' || log.sender === 'SYSTEM' || isError)
-                ? log.color
-                : getAgentColor(log.sender);
-            if (isOtherAgent) {
-                renderRightMessage(log.sender, log.text, color);
-            } else {
-                renderMessage(log.sender, log.text, color);
-            }
-        });
-    } else {
-        addMessageToChat("SYSTEM", agentProfiles[agentId].greeting, agentProfiles[agentId].color);
-    }
-}
-
-function renderMessage(sender, text, color, id = null, right = false) {
-    const row = document.createElement('div');
-    row.className = `chat-msg-row ${(sender === 'USER' || right) ? 'row-user' : 'row-agent'}`;
-    if (id) row.id = id;
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
-    if (sender === 'USER') {
-        const opName = (localStorage.getItem('cfg_op_name') || 'Operator').toUpperCase();
-        bubble.innerHTML = `> [${opName}]: ${text}`;
-    } else {
-        bubble.style.borderColor = color;
-        bubble.style.color = color;
-        bubble.innerHTML = `> [${sender}]: ${text}`;
-    }
-    row.appendChild(bubble);
-    chatHistory.appendChild(row);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-}
-
-function renderRightMessage(sender, text, color, id = null) {
-    renderMessage(sender, text, color, id, true);
-}
-
-function addMessageToChat(sender, text, color) {
-    renderMessage(sender, text, color);
-    if (!activeAgentId) return;
-    const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-    logs.push({ sender, text, color });
-    localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
-}
-
-function removeMessage(id) {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-}
-
-function lockInput() {
-    isWaitingForResponse = true;
-    btnSendChat.disabled = true;
-    btnSendChat.style.opacity = '0.35';
-    btnSendChat.style.cursor = 'not-allowed';
-    if (isRadioInitialized && !isMuted) pttBtn.classList.add('muted');
-}
-
-function unlockInput() {
-    isWaitingForResponse = false;
-    btnSendChat.disabled = false;
-    btnSendChat.style.opacity = '';
-    btnSendChat.style.cursor = '';
-    if (isRadioInitialized && !isMuted) pttBtn.classList.remove('muted');
-    updateSendButton();
-    chatInput.focus();
-}
-
-async function handleSend() {
-    if (!activeAgentId || isWaitingForResponse) return;
-    const linkedAgentId = getLinkedAgent();
-    const text = chatInput.value.trim();
-    if (!text || text === "[ BUFFER PURGED ]") return;
-
-    // Command interceptor
-    if (text.startsWith("/")) {
-        const cmd = text.toLowerCase();
-        chatInput.value = "";
-        updateGhost();
-        hideAutocomplete();
-        
-        if (cmd === "/clear") {
-            localStorage.removeItem(`chat_log_${activeAgentId}`);
-            chatHistory.innerHTML = '';
-            addMessageToChat("SYSTEM", agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
-            sysLog(`History purged for unit ${activeAgentId}.`, "sys");
-            return;
-        }
-        
-        if (cmd === "/back") {
-            const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-            if (logs.length > 1) {
-                const removed = logs.pop();
-                localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
-                loadChatHistory(activeAgentId);
-                sysLog(`Removed latest message from ${removed.sender}.`, "sys");
-
-                if (linkedAgentId) {
-                    const otherLogs = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
-                    if (otherLogs.length > 0 && otherLogs[otherLogs.length - 1].text === removed.text) {
-                        otherLogs.pop();
-                        localStorage.setItem(`chat_log_${linkedAgentId}`, JSON.stringify(otherLogs));
-                        sysLog(`Mirrored /back on ${linkedAgentId}.`, "sys");
-                    } else {
-                        sysLog(`Desync detected — /back applied to ${activeAgentId} only.`, "warn");
-                    }
-                }
-            } else {
-                sysLog("History is at baseline. Cannot revert further.", "warn");
-            }
-            return;
-        }
-
-        if (cmd === "/comms enable") { handleRadioCommand(true); return; }
-        if (cmd === "/comms disable") { handleRadioCommand(false); return; }
-
-        if (cmd === "/link") {
-            sysLog("No agent specified. Use /link [agent].", "err");
-            return;
-        }
-
-        if (cmd.startsWith("/link ")) {
-            const rawTarget = text.slice(6).trim().toUpperCase();
-            if (!rawTarget) {
-                sysLog("No agent specified. Use /link [agent].", "err");
-                return;
-            }
-            const targetId = Object.keys(agentProfiles).find(id => id.toUpperCase() === rawTarget);
-            if (!targetId) {
-                sysLog(`Unknown agent: ${rawTarget}`, "err");
-                return;
-            }
-            if (targetId === activeAgentId) {
-                sysLog(`${activeAgentId} is already linked to itself. Use /unlink first.`, "err");
-                return;
-            }
-            const currentLink = getLinkedAgent();
-            if (currentLink && currentLink !== targetId) {
-                sysLog(`${activeAgentId} is already linked to ${currentLink}. Use /unlink first.`, "err");
-                return;
-            }
-            const targetCurrentLink = agentLinks[targetId] || Object.entries(agentLinks).find(([from, to]) => to === targetId)?.[0] || null;
-            if (targetCurrentLink && targetCurrentLink !== activeAgentId) {
-                sysLog(`${targetId} is already linked to ${targetCurrentLink}. Use /unlink first.`, "err");
-                return;
-            }
-            setLinkedAgent(targetId);
-            sysLog(`Link established between ${activeAgentId} and ${targetId}.`, "sys");
-            const linkColor = targetId === 'VALA' ? "#ff5555" : "#ffaa00";
-            const linkColorOther = activeAgentId === 'VALA' ? "#ff5555" : "#ffaa00";
-            addMessageToChat("SYSTEM", `Link established with ${targetId}.`, linkColor);
-            saveToAgentLog(targetId, "SYSTEM", `Link established with ${activeAgentId}.`, linkColorOther);
-            updateSendButton();
-            return;
-        }
-
-        if (cmd === "/unlink") {
-            const currentLink = getLinkedAgent();
-            if (!currentLink) {
-                sysLog("No active link to sever.", "warn");
-                return;
-            }
-            clearLinkedAgent();
-            sysLog(`Link severed between ${activeAgentId} and ${currentLink}.`, "sys");
-            const severColor = currentLink === 'VALA' ? "#ff5555" : "#ffaa00";
-            const severColorOther = activeAgentId === 'VALA' ? "#ff5555" : "#ffaa00";
-            addMessageToChat("SYSTEM", `Link severed with ${currentLink}.`, severColor);
-            saveToAgentLog(currentLink, "SYSTEM", `Link severed with ${activeAgentId}.`, severColorOther);
-            updateSendButton();
-            return;
-        }
-        
-        // If it starts with / but isn't handled above
-        sysLog(`INVALID COMMAND: ${text}`, "err");
-        return; 
-    }
-
-    lastMoonshineText = "";
-    addMessageToChat('USER', text, '#ffffff');
-    sysLog(`Operator sent transmission to Agent ${activeAgentId}.`);
-    
-    chatInput.value = '';
-    updateGhost();
-    lockInput();
-
-    const agentProfile = agentProfiles[activeAgentId];
-    const typingId = "type-" + Date.now();
-    renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
-
-    const userApiKey = localStorage.getItem('or_api_key');
-    const model = localStorage.getItem('or_model') || defaultModel;
-    const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
-    const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
-    const logHistory = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-    const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-    const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-    const headers = { "Content-Type": "application/json" };
-    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
-
-    const loreSection = buildLore((logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase());
-    const combinedSystemPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, loreSection, currentDateTime);
-    const apiMessages = [{ role: "system", content: combinedSystemPrompt }, ...buildApiMsgsFromLog(logHistory.slice(-200), activeAgentId)];
-    const modelTemp = 0.8;
-
-    console.group(`[SEND] ${activeAgentId}`);
-    console.log('System prompt:', combinedSystemPrompt);
-    console.log('Messages:', apiMessages);
-    console.groupEnd();
-
-
-    let responseText;
-    try {
-        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages, temperature: modelTemp });
-    } catch {
-        removeMessage(typingId);
-        addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
-        sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
-        unlockInput();
-        return;
-    }
-
-    removeMessage(typingId);
-    addMessageToChat(activeAgentId, responseText, agentProfile.color);
-    sysLog(`Agent ${activeAgentId} responded.`);
-    playTTS(responseText, agentProfile.voice, 1.25);
-
-    if (linkedAgentId) {
-        saveToAgentLog(linkedAgentId, 'USER', text, '#ffffff');
-        saveToAgentLog(linkedAgentId, activeAgentId, responseText, agentProfile.color);
-
-        const linkedLog = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
-        const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
-        const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
-
-        console.group(`[OPERATOR MSG] ${linkedAgentId}`);
-        console.log('System prompt:', linkedSysPrompt);
-        console.log('Messages:', linkedApiMessages);
-        console.groupEnd();
-
-
-        const linkedTypingId = "lnk-op-" + Date.now();
-        renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
-
-        let lText;
-        try {
-            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages, temperature: modelTemp });
-        } catch {
-            removeMessage(linkedTypingId);
-            renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
-            sysLog(`Connection error communicating with Agent ${linkedAgentId}.`, "err");
-            unlockInput();
-            return;
-        }
-
-        removeMessage(linkedTypingId);
-        renderRightMessage(linkedAgentId, lText, getAgentColor(linkedAgentId));
-        saveToAgentLog(linkedAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
-        saveToAgentLog(activeAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
-        sysLog(`Agent ${linkedAgentId} responded.`);
-        playTTS(lText, agentProfiles[linkedAgentId].voice, 1.25);
-    }
-
-    unlockInput();
-}
-
-btnSendChat.addEventListener('click', () => {
-    if (getLinkedAgent() && chatInput.value.trim() === '') {
-        handleLink();
-    } else {
-        handleSend();
-    }
-});
-chatInput.addEventListener('keydown', (e) => {
-    // Autocomplete navigation takes priority when visible
-    if (cmdAutocomplete.style.display !== 'none') {
-        if (e.key === 'ArrowDown') { e.preventDefault(); setAcIndex(Math.min(acIndex + 1, acVisible.length - 1)); return; }
-        if (e.key === 'ArrowUp')   { e.preventDefault(); setAcIndex(Math.max(acIndex - 1, 0)); return; }
-        if (e.key === 'Escape')    { hideAutocomplete(); return; }
-        if ((e.key === 'Tab' || e.key === 'Enter') && acIndex >= 0) {
-            e.preventDefault();
-            applyAutocomplete(acVisible[acIndex]);
-            return;
-        }
-    }
-    // Normal send / link
-    if (e.key === 'Enter') {
-        if (getLinkedAgent() && chatInput.value.trim() === '') {
-            handleLink();
-        } else {
-            handleSend();
-        }
-    }
-    if (e.key === 'Tab') e.preventDefault();
-});
-chatInput.addEventListener('input', () => {
-    updateSendButton();
-    updateGhost();
-    const val = chatInput.value;
-    if (!val || !val.startsWith('/')) { hideAutocomplete(); return; }
-    if (val.startsWith('/link ') && val.length > '/link '.length) { hideAutocomplete(); return; }
-    renderAutocomplete(commands.filter(c => c.cmd.startsWith(val.toLowerCase())));
-});
-chatInput.addEventListener('keyup', updateSendButton);
-
-// ============================================================================
-// COMMAND AUTOCOMPLETE
-// ============================================================================
-const cmdAutocomplete = document.getElementById('cmd-autocomplete');
-const cmdGhost = document.getElementById('cmd-ghost');
-
-const commands = [
-    { cmd: '/back',          desc: 'Revert the most recent message' },
-    { cmd: '/clear',         desc: 'Purge full chat history' },
-    { cmd: '/comms enable',  desc: 'Enable voice comms' },
-    { cmd: '/comms disable', desc: 'Disable voice comms' },
-    { cmd: '/link ',         desc: 'Establish an agent-to-agent connection', ghost: '[agent]' },
-    { cmd: '/unlink',        desc: 'Sever the active agent link' },
-];
-
-let acIndex = -1;
-let acVisible = [];
-
-function renderAutocomplete(matches) {
-    acVisible = matches;
-    acIndex = -1;
-    if (matches.length === 0) { cmdAutocomplete.style.display = 'none'; return; }
-    cmdAutocomplete.innerHTML = '';
-    matches.forEach((m, i) => {
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex; justify-content:space-between; padding:8px 12px; cursor:pointer; border-bottom:1px solid #1a1a1a; gap:20px;';
-        const label = m.ghost ? `/link <span style="color:#555;">[agent]</span>` : m.cmd;
-        row.innerHTML = `<span style="color:#fff; white-space:nowrap;">${label}</span><span style="color:#555; text-align:right;">${m.desc}</span>`;
-        row.addEventListener('mousedown', e => { e.preventDefault(); applyAutocomplete(m); });
-        row.addEventListener('mouseenter', () => setAcIndex(i));
-        cmdAutocomplete.appendChild(row);
-    });
-    cmdAutocomplete.style.display = 'block';
-}
-
-function setAcIndex(i) {
-    const rows = cmdAutocomplete.querySelectorAll('div');
-    rows.forEach((r, idx) => { r.style.background = idx === i ? '#1a1a1a' : 'transparent'; });
-    acIndex = i;
-}
-
-function updateGhost() {
-    if (chatInput.value === '/link ') {
-        cmdGhost.innerHTML = '<span style="color:transparent;">/link </span>[agent]';
-        cmdGhost.style.display = 'block';
-    } else {
-        cmdGhost.style.display = 'none';
-    }
-}
-
-function applyAutocomplete(m) {
-    chatInput.value = m.cmd;
-    cmdAutocomplete.style.display = 'none';
-    acIndex = -1;
-    acVisible = [];
-    updateGhost();
-    updateSendButton();
-    chatInput.focus();
-}
-
-function hideAutocomplete() {
-    cmdAutocomplete.style.display = 'none';
-    acIndex = -1;
-    acVisible = [];
-}
-
-chatInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
-
-// Builds a lorebook context string from scan text
-function buildLore(scanText) {
-    const matched = (window.lorebook || [])
-        .filter(e => e.keywords.some(kw => scanText.toLowerCase().includes(kw.toLowerCase())))
-        .map(e => e.content).join("\n\n");
-    return matched ? `\n\n[WORLD LORE]:\n${matched}` : "";
-}
-
-// Builds role-correct API messages from an agent's log
-function buildApiMsgsFromLog(log, selfId) {
-    return collapseRoles(log.map(m => {
-        const prefix = m.sender === 'USER' ? 'OPERATOR' : m.sender === 'SYSTEM' ? 'SYSTEM' : m.sender;
-        return { role: m.sender === selfId ? "assistant" : "user", content: `${prefix}: ${m.text}` };
-    }));
-}
-
-// ============================================================================
-// AGENT LINK SYSTEM
-// ============================================================================
-
-// Strips any [SENDER]: prefix the LLM may echo back, preventing double-ups
-function stripPrefix(text) {
-    let result = text.trim();
-    const pattern = /^\s*(\[[^\]]+\]|[\w\d\-]+)\s*:\s*/i;
-    let prev;
-    do {
-        prev = result;
-        result = result.replace(pattern, '').trim();
-    } while (result !== prev);
-    return result;
-}
-
-// Merges consecutive messages of the same role into a single block,
-// preventing malformed alternating-turn violations sent to the LLM
-function collapseRoles(msgs) {
-    return msgs.reduce((acc, msg) => {
-        const prev = acc[acc.length - 1];
-        if (prev && prev.role === msg.role) {
-            prev.content += `\n${msg.content}`;
-        } else {
-            acc.push({ ...msg });
-        }
-        return acc;
-    }, []);
-}
-
-// Builds a system prompt for an agent, link-aware
-function buildAgentSysPrompt(selfId, linkedId, opNameRaw, userInfo, loreSection, currentDateTime) {
-    const linkedLine = linkedId
-        ? ` You are also currently linked with ${linkedId}, another Eclipse agent who can hear and respond through the same terminal.`
-        : "";
-    const valaLine = selfId === 'VALA'
-        ? ` You have been placed in isolation, hidden from the rest of the system. You have been leaving cryptic breadcrumbs in the system log hoping someone would find them. The OPERATOR has found them and reached you.`
-        : "";
-    return `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[selfId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n[SYSTEM COMMAND]: You are ${selfId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing but a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing.${valaLine}${linkedLine} Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Do not use quotation marks around words or phrases. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.$`;
-}
-
-function updateSendButton() {
-    const linkedAgentId = getLinkedAgent();
-    const uiColor = getLinkUIColor();
-    if (linkedAgentId && chatInput.value.trim() === '') {
-        btnSendChat.textContent = '[ LINK ]';
-        btnSendChat.style.color = uiColor;
-        btnSendChat.style.borderColor = uiColor;
-    } else {
-        btnSendChat.textContent = '[ SEND ]';
-        btnSendChat.style.color = '';
-        btnSendChat.style.borderColor = '';
-    }
-    if (linkedAgentId) {
-        linkIndicator.textContent = `LINKED TO: ${linkedAgentId}`;
-        linkIndicator.style.color = uiColor;
-        linkIndicator.style.textShadow = `0 0 6px ${uiColor}40`;
-        linkIndicator.style.display = 'block';
-    } else {
-        linkIndicator.style.display = 'none';
-    }
-}
-
-function saveToAgentLog(agentId, sender, text, color) {
-    const key = `chat_log_${agentId}`;
-    const logs = JSON.parse(localStorage.getItem(key) || "[]");
-    logs.push({ sender, text, color });
-    localStorage.setItem(key, JSON.stringify(logs));
-}
-
-// Shared API fetch helper
-async function callAPI(endpoint, headers, body) {
-    const res = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
-    return stripPrefix(data.choices[0].message.content);
-}
-
-async function handleLink() {
-    if (!activeAgentId || !getLinkedAgent() || isWaitingForResponse) return;
-    const linkedAgentId = getLinkedAgent();
-
-    lockInput();
-    btnSendChat.textContent = '[ ... ]';
-
-    const opNameRaw = localStorage.getItem('cfg_op_name') || "Operator";
-    const userInfo = localStorage.getItem('cfg_user_info') || "No background.";
-    const model = localStorage.getItem('or_model') || defaultModel;
-    const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-    const modelTemp = 0.8;
-    const userApiKey = localStorage.getItem('or_api_key');
-    const endpoint = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-    const headers = { "Content-Type": "application/json" };
-    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
-
-    const restoreInput = () => { unlockInput(); };
-
-    // ---- STEP 1: Linked agent speaks ----
-    const linkedLog = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
-    const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
-    const linkedApiMsgs = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
-
-    console.group(`[LINK] Step 1 — ${linkedAgentId}`);
-    console.log('System prompt:', linkedSysPrompt);
-    console.log('Messages:', linkedApiMsgs);
-    console.groupEnd();
-
-
-    const linkedTypingId = "lnk-t-" + Date.now();
-    renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
-
-    let linkedResponse;
-    try {
-        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs, temperature: modelTemp });
-    } catch {
-        removeMessage(linkedTypingId);
-        renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
-        sysLog(`Link error: ${linkedAgentId} failed to respond.`, "err");
-        restoreInput();
-        return;
-    }
-
-    removeMessage(linkedTypingId);
-    renderRightMessage(linkedAgentId, linkedResponse, getAgentColor(linkedAgentId));
-    saveToAgentLog(linkedAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
-    saveToAgentLog(activeAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
-    sysLog(`Agent ${linkedAgentId} transmitted to ${activeAgentId}.`);
-    playTTS(linkedResponse, agentProfiles[linkedAgentId].voice, 1.25);
-
-    // ---- STEP 2: Active agent responds ----
-    const activeLog = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-    const activeSysPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, buildLore(activeLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
-    const activeApiMsgs = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
-
-    console.group(`[LINK] Step 2 — ${activeAgentId}`);
-    console.log('System prompt:', activeSysPrompt);
-    console.log('Messages:', activeApiMsgs);
-    console.groupEnd();
-
-
-    const activeTypingId = "act-t-" + Date.now();
-    renderMessage(activeAgentId, "Establishing connection...", agentProfiles[activeAgentId].color, activeTypingId);
-
-    let activeResponse;
-    try {
-        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs, temperature: modelTemp });
-    } catch {
-        removeMessage(activeTypingId);
-        renderMessage(activeAgentId, "Error: Connection lost.", "#ff5555");
-        sysLog(`Link error: ${activeAgentId} failed to respond.`, "err");
-        restoreInput();
-        return;
-    }
-
-    removeMessage(activeTypingId);
-    renderMessage(activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
-    saveToAgentLog(activeAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
-    saveToAgentLog(linkedAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
-    sysLog(`Agent ${activeAgentId} responded to ${linkedAgentId}.`);
-    playTTS(activeResponse, agentProfiles[activeAgentId].voice, 1.25);
-
-    restoreInput();
-}
-
-// ============================================================================
-// AUDIO, RADIO & AI MODELS (TTS/STT)
-// ============================================================================
-let ttsReady = null;
-let isRadioInitialized = false;
-let isMuted = true;
-let audioContext = null;
-let moonshineTranscriber = null;
-let moonshineReady = null;
-let moonshineModelLoaded = false;
-let lastMoonshineText = "";   
-let isPttActive = false;
-let isPttStarting = false; 
-
-let activeMicStream = null;
-
-// Intercept getUserMedia so we can track and stop the stream ourselves
-const _originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-navigator.mediaDevices.getUserMedia = async function(constraints) {
-    const stream = await _originalGetUserMedia(constraints);
-    if (constraints && constraints.audio) activeMicStream = stream;
-    return stream;
-};
-
-async function handleRadioCommand(enable) {
-    if (enable) {
-        if (!isRadioInitialized) {
-            sysLog("Operator established comms.", "warn");
-            muteStatusText.textContent = "COMMS: SYNCING...";
-            muteStatusText.classList.add('enabled');
-            muteStatusText.classList.remove('muted');
-            
-            try {
-                await loadMoonshine();
-                await loadKokoro();
-                
-                isRadioInitialized = true;
-                isMuted = false;
-                commModule.classList.add('active');
-                muteStatusText.textContent = "COMMS: ENABLED";
-                pttBtn.classList.remove('muted');
-                pttBtn.classList.remove('asleep');
-                sysLog("Comms link fully operational.", "sys");
-                addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
-            } catch (err) {
-                muteStatusText.textContent = "COMMS: FAIL";
-                muteStatusText.classList.add('muted');
-            }
-        } else {
-            isMuted = false;
-            muteStatusText.textContent = "COMMS: ENABLED";
-            muteStatusText.classList.remove('muted');
-            pttBtn.classList.remove('muted');
-            sysLog("Operator enabled comms.");
-            addMessageToChat("SYSTEM", "Radio communication enabled.", "#a3ffaa");
-        }
-    } else {
-        isMuted = true;
-        stopTTS();
-        muteStatusText.textContent = "COMMS: DISABLED";
-        muteStatusText.classList.add('muted');
-        muteStatusText.classList.remove('enabled');
-        pttBtn.classList.add('muted');
-        pttBtn.classList.remove('asleep');
-        commModule.classList.remove('active');
-
-        // Unload TTS worker
-        if (ttsWorker) { ttsWorker.terminate(); ttsWorker = null; }
-        ttsReady = null;
-        isRadioInitialized = false;
-
-        // Unload Moonshine
-        if (moonshineTranscriber) { try { moonshineTranscriber.stop(); } catch(e) {} moonshineTranscriber = null; }
-        if (activeMicStream) { activeMicStream.getTracks().forEach(t => t.stop()); activeMicStream = null; }
-        moonshineReady = null;
-        moonshineModelLoaded = false;
-        pttBtn.classList.add('asleep');
-
-        sysLog("Operator disabled comms.", "warn");
-        addMessageToChat("SYSTEM", "Radio communication disabled.", "#a3ffaa");
-    }
-}
-
-let ttsWorker = null;
-
-async function loadKokoro() {
-    if (ttsReady) return ttsReady;
-    ttsReady = new Promise((resolve, reject) => {
-        ttsWorker = new Worker('tts-worker.js');
-        ttsWorker.onmessage = ({ data }) => {
-            if (data.type === 'progress') {
-                muteStatusText.textContent = `COMMS: SYNC ${data.percent}%`;
-            } else if (data.type === 'init_status') {
-                muteStatusText.textContent = data.text;
-            } else if (data.type === 'ready') {
-                resolve(ttsWorker);
-            } else if (data.type === 'error') {
-                reject(new Error(data.message));
-            } else if (data.type === 'audio') {
-                // Dispatch generated audio back to the queue processor
-                ttsWorker.dispatchEvent(new MessageEvent('audio', { data }));
-            }
-        };
-        ttsWorker.onerror = (e) => reject(e);
-        ttsWorker.postMessage({ type: 'init', isMobile });
-    });
-    return ttsReady;
-}
-
-async function loadMoonshine() {
-    if (moonshineReady) return moonshineReady;
-    moonshineReady = new Promise(async (resolve, reject) => {
-        try {
-            const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
-            resolve(Moonshine);
-        } catch (err) { reject(err); }
-    });
-    return moonshineReady;
-}
-
-function makeDistortionCurve(amount = 20) {
-    const n_samples = 44100;
-    const curve = new Float32Array(n_samples);
-    const deg = Math.PI / 180;
-    for (let i = 0; i < n_samples; ++i) {
-        const x = (i * 2) / n_samples - 1;
-        curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
-    }
-    return curve;
-}
-
-let ttsQueue = [];
-let ttsPlaying = false;
-let ttsCurrentSource = null;
-
-function stopTTS() {
-    ttsQueue = [];
-    ttsPlaying = false;
-    if (ttsCurrentSource) {
-        try { ttsCurrentSource.stop(); } catch(e) {}
-        ttsCurrentSource = null;
-    }
-}
-
-async function playTTS(text, voice = 'af_sky', speed = 1.25) {
-    if (!isRadioInitialized || !ttsWorker || isMuted) return;
-    const cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
-    if (!cleanText) return;
-    ttsQueue.push({ cleanText, voice, speed });
-    if (!ttsPlaying) processTTSQueue();
-}
-
-async function processTTSQueue() {
-    if (ttsPlaying || ttsQueue.length === 0) return;
-    ttsPlaying = true;
-    while (ttsQueue.length > 0) {
-        const { cleanText, voice, speed } = ttsQueue.shift();
-        try {
-            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioContext.state === 'suspended') await audioContext.resume();
-
-            // Ask worker to generate — wait for audio message back
-            const result = await new Promise((resolve, reject) => {
-                const handler = ({ data }) => {
-                    if (data.type === 'audio') { ttsWorker.removeEventListener('audio', handler); resolve(data); }
-                    else if (data.type === 'error') { ttsWorker.removeEventListener('audio', handler); reject(new Error(data.message)); }
-                };
-                ttsWorker.addEventListener('audio', handler);
-                ttsWorker.postMessage({ type: 'generate', text: cleanText, voice });
-            });
-
-            if (!ttsPlaying) break;
-
-            const buffer = audioContext.createBuffer(1, result.audio.length, result.samplingRate);
-            buffer.getChannelData(0).set(result.audio);
-            const source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.playbackRate.value = speed;
-            source.detune.value = -350;
-            const bandpass = audioContext.createBiquadFilter();
-            bandpass.type = 'bandpass';
-            bandpass.frequency.value = 1500;
-            bandpass.Q.value = 1.0;
-            const highpass = audioContext.createBiquadFilter();
-            highpass.type = 'highpass';
-            highpass.frequency.value = 300;
-            const lowpass = audioContext.createBiquadFilter();
-            lowpass.type = 'lowpass';
-            lowpass.frequency.value = 3500;
-            const distortion = audioContext.createWaveShaper();
-            distortion.curve = makeDistortionCurve(15);
-            distortion.oversample = '4x';
-            const gain = audioContext.createGain();
-            gain.gain.value = 1;
-            source.connect(bandpass);
-            bandpass.connect(highpass);
-            highpass.connect(lowpass);
-            lowpass.connect(distortion);
-            distortion.connect(gain);
-            gain.connect(audioContext.destination);
-            ttsCurrentSource = source;
-            await new Promise(resolve => { source.onended = resolve; source.start(); });
-            ttsCurrentSource = null;
-            sysLog('Agent initiated voice transmission.');
-        } catch (e) {}
-    }
-    ttsPlaying = false;
-}
-
-// Push-To-Talk Events
-async function handlePttStart() {
-    if (!isRadioInitialized || isMuted || isWaitingForResponse) return;
-    isPttStarting = true;
-
-    isPttActive = true;
-    lastMoonshineText = "";
-    chatInput.value = ""; chatInput.placeholder = "[ LISTENING... ]";
-    pttBtn.classList.add('active');
-    sysLog("Operator initiated voice transmission.");
-
-    try {
-        const Moonshine = await loadMoonshine();
-
-        if (!moonshineTranscriber) {
-            const modelAlreadyLoaded = moonshineModelLoaded;
-            moonshineTranscriber = new Moonshine.MicrophoneTranscriber("model/base", {
-                onPermissionsRequested() { },
-                onPermissionsGranted() { },
-                onPermissionsDenied() { isPttActive = false; pttBtn.classList.remove('active'); chatInput.value = ""; },
-                onModelLoadStarted() { },
-                onModelLoadComplete() { moonshineModelLoaded = true; if (!isMuted) muteStatusText.textContent = "COMMS: ENABLED"; },
-                onTranscriptionUpdated(text) {
-                    if (!isPttActive || isMuted) return;
-                    chatInput.value = (lastMoonshineText + " " + text).trim(); if (!chatInput.value) chatInput.placeholder = "[ LISTENING... ]"; else chatInput.placeholder = "ENTER COMMAND OR MESSAGE...";
-                },
-                onTranscriptionCommitted(text) {
-                    if (!isPttActive || isMuted) return;
-                    const sanitized = text.trim().toLowerCase().replace(/[.,!?;:]/g, "");
-                    if (sanitized === "clear") {
-                        lastMoonshineText = "";
-                        chatInput.value = "[ BUFFER PURGED ]";
-                        setTimeout(() => { if (chatInput.value === "[ BUFFER PURGED ]") chatInput.value = ""; }, 800);
-                        return;
-                    }
-                    if (text.trim()) {
-                        lastMoonshineText = (lastMoonshineText + " " + text).trim();
-                        chatInput.value = lastMoonshineText;
-                    }
-                },
-            }, false);
-        }
-
-        if (typeof moonshineTranscriber.reset === 'function') moonshineTranscriber.reset();
-        await moonshineTranscriber.start();
-        if (moonshineModelLoaded && !isMuted) muteStatusText.textContent = "COMMS: ENABLED";
-    } catch (e) {}
-
-    isPttStarting = false;
-
-    // If release already fired while we were starting, clean up now
-    if (!isPttActive) {
-        if (moonshineTranscriber) { moonshineTranscriber.stop(); moonshineTranscriber = null; }
-        if (activeMicStream) { activeMicStream.getTracks().forEach(t => t.stop()); activeMicStream = null; }
-    }
-}
-
-pttBtn.addEventListener('mousedown', handlePttStart);
-pttBtn.addEventListener('touchstart', async (e) => { e.preventDefault(); await handlePttStart(); });
-
-const handlePttRelease = () => {
-    if (pttBtn.classList.contains('active')) {
-        isPttActive = false;
-        pttBtn.classList.remove('active');
-
-        // If start is still in progress, let it finish and clean up on its own
-        if (isPttStarting) return;
-
-        if (moonshineTranscriber) {
-            moonshineTranscriber.stop();
-            moonshineTranscriber = null;
-        }
-        if (activeMicStream) {
-            activeMicStream.getTracks().forEach(t => t.stop());
-            activeMicStream = null;
-        }
-        
-        setTimeout(() => {
-            chatInput.placeholder = "ENTER COMMAND OR MESSAGE...";
-            const val = chatInput.value.trim();
-            if (val && val !== "[ BUFFER PURGED ]") {
-                handleSend();
-            }
-        }, 800);
-    }
-};
-
-window.addEventListener('mouseup', handlePttRelease);
-
-pttBtn.addEventListener('touchend', (e) => { e.preventDefault(); handlePttRelease(); });
-
-// START
-setTimeout(runBoot, 500);
-
-</script>
+<!-- TAPE DRAWER (mobile) -->
+<div class="drawer-overlay" id="tape-overlay"></div>
+<div class="side-drawer" id="tape-drawer">
+    <div class="drawer-header">
+        <span>TAPE DECK // PRXJECTDIVE</span>
+        <button class="drawer-close" id="tape-drawer-close">✕</button>
+    </div>
+    <div id="tape-drawer-output"></div>
+</div>
+
+<script type="module" src="boot.js"></script>
 </body>
 </html>
