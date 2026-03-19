@@ -574,17 +574,17 @@
             .cp-btn       { width: 55px; height: 40px; }
             .cp-screen    { font-size: 0.75em; }
 
-            /* Disable edge vignette on mobile so tabs are visible */
+            /* Disable edge vignette on mobile */
             .crt-overlays::after { display: none; }
+            #monitor { box-shadow: none; }
 
-            /* CRT scanlines and flicker on drawers */
-            .side-drawer { animation: textFlicker 0.12s infinite; }
+            /* CRT scanlines on drawers — no flicker/opacity, just scanlines */
             .side-drawer::before {
-                content: " "; display: block; position: fixed;
-                top: 0; left: 0; bottom: 0; right: 0;
-                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%);
+                content: " "; pointer-events: none;
+                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.12) 50%);
                 background-size: 100% 3px;
-                pointer-events: none; z-index: 400;
+                z-index: 1; border-radius: inherit;
             }
             .tp-cover-wrap     { max-height: 80px; }
             .tp-tracklist      { max-height: 120px; }
