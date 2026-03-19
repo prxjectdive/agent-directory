@@ -10,6 +10,14 @@ let loopMode = 'none'; // 'none' | 'all' | 'one'
 let shuffle  = false;
 let shuffleQueue = [];
 
+// Web Audio API — X/Y oscilloscope
+let audioCtx    = null;
+let analyser    = null;
+let analyserL   = null;
+let analyserR   = null;
+let sourceNode  = null;
+let animFrameId = null;
+
 const views = [];
 
 // ============================================================================
@@ -26,8 +34,130 @@ export async function initMusicPlayer() {
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('ended', onEnded);
+    audio.addEventListener('play',  () => { initAudioContext(); startScope(); });
+    audio.addEventListener('pause', () => stopScope());
 
     if (tracks.length) loadTrack(0);
+}
+
+// ============================================================================
+// WEB AUDIO / X/Y OSCILLOSCOPE
+// ============================================================================
+function initAudioContext() {
+    if (audioCtx) return;
+    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    analyser  = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+
+    const splitter = audioCtx.createChannelSplitter(2);
+    analyserL = audioCtx.createAnalyser(); analyserL.fftSize = 2048;
+    analyserR = audioCtx.createAnalyser(); analyserR.fftSize = 2048;
+
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    sourceNode.connect(splitter);
+    splitter.connect(analyserL, 0);
+    splitter.connect(analyserR, 1);
+    sourceNode.connect(audioCtx.destination);
+}
+
+function startScope() {
+    if (!analyserL || !analyserR) return;
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+
+    const bufLen  = analyserL.fftSize;
+    const dataL   = new Float32Array(bufLen);
+    const dataR   = new Float32Array(bufLen);
+    const drawSamples = 1024;
+
+    function draw() {
+        animFrameId = requestAnimationFrame(draw);
+        analyserL.getFloatTimeDomainData(dataL);
+        analyserR.getFloatTimeDomainData(dataR);
+
+        views.forEach(container => {
+            const canvas = container.querySelector('.tp-scope-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            const cx = W / 2;
+            const cy = H / 2;
+
+            // Phosphor fade trail
+            ctx.fillStyle = 'rgba(3, 10, 3, 0.35)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Dotted grid — centre x/y only
+            ctx.setLineDash([2, 4]);
+            ctx.strokeStyle = 'rgba(0, 55, 0, 0.5)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // X/Y rotated 45° — mono is horizontal
+            const scaleX = 0.72;
+            const scaleY = 1.1;
+            const inv_sq2 = 1 / Math.SQRT2;
+
+            const pts = [];
+            for (let i = 0; i < drawSamples; i++) {
+                const l = dataL[i];
+                const r = dataR[i];
+                pts.push({
+                    x: cx + (l + r) * inv_sq2 * scaleX * cx,
+                    y: cy - (r - l) * inv_sq2 * scaleY * cy
+                });
+            }
+
+            for (let pass = 0; pass < 3; pass++) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length - 1; i++) {
+                    const mx = (pts[i].x + pts[i + 1].x) / 2;
+                    const my = (pts[i].y + pts[i + 1].y) / 2;
+                    ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+                }
+                ctx.strokeStyle = pass === 0
+                    ? 'rgba(0, 255, 80, 0.06)'
+                    : pass === 1
+                    ? 'rgba(0, 255, 80, 0.55)'
+                    : 'rgba(180, 255, 200, 0.85)';
+                ctx.lineWidth = pass === 0 ? 4 : pass === 1 ? 1.2 : 0.6;
+                ctx.stroke();
+            }
+        });
+    }
+
+    draw();
+}
+
+function stopScope() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+    views.forEach(container => {
+        const canvas = container.querySelector('.tp-scope-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        ctx.fillStyle = '#030a03';
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.setLineDash([2, 4]);
+        ctx.strokeStyle = 'rgba(0, 55, 0, 0.5)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Idle dot at center
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 200, 60, 0.5)';
+        ctx.fill();
+    });
 }
 
 // ============================================================================
@@ -46,7 +176,9 @@ function onEnded() {
         return;
     }
     advanceTrack(1);
+    playing = true;
     audio.play();
+    updateAllViews();
 }
 
 // ============================================================================
@@ -77,11 +209,11 @@ function renderInto(container) {
                 <div class="tp-reel tp-reel-r"></div>
             </div>
             <div class="tp-controls">
-                <button class="tp-btn tp-shuffle">[ SHUFFLE ]</button>
-                <button class="tp-btn tp-prev">[ PREV ]</button>
-                <button class="tp-btn tp-play">[ PLAY ]</button>
-                <button class="tp-btn tp-next">[ NEXT ]</button>
-                <button class="tp-btn tp-loop">[ LOOP ]</button>
+                <button class="tp-btn tp-shuffle">SHUFFLE</button>
+                <button class="tp-btn tp-prev">PREV</button>
+                <button class="tp-btn tp-play">[ &gt; ]</button>
+                <button class="tp-btn tp-next">NEXT</button>
+                <button class="tp-btn tp-loop">LOOP</button>
             </div>
             <div class="tp-progress-wrap">
                 <div class="tp-progress-bar">
@@ -100,6 +232,9 @@ function renderInto(container) {
                         <span class="tp-track-dur">${t.duration}</span>
                     </div>
                 `).join('')}
+            </div>
+            <div class="tp-scope">
+                <canvas class="tp-scope-canvas" width="240" height="180"></canvas>
             </div>
         </div>
     `;
@@ -198,7 +333,7 @@ function updateAllViews() {
     const track = tracks[current];
     if (!track) return;
 
-    const loopLabel = { none: '[ LOOP ]', all: '[ LOOP ALL ]', one: '[ LOOP ONE ]' }[loopMode];
+    const loopLabel = { none: 'LOOP', all: 'LOOP ALL', one: 'LOOP ONE' }[loopMode];
 
     views.forEach(container => {
         const cover   = container.querySelector('.tp-cover-img');
