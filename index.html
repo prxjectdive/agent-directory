@@ -8,7 +8,8 @@
         /* =========================================
            GLOBAL STYLES & LAYOUT
            ========================================= */
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; scrollbar-width: none; }
+        *::-webkit-scrollbar { display: none; }
 
         body {
             background: #000; margin: 0; height: 100dvh; width: 100vw;
@@ -218,8 +219,9 @@
            CONFIG INTERFACE
            ========================================= */
         #config-interface {
-            display: none; flex-direction: column; gap: 15px; padding: 20px;
-            background: rgba(0,0,0,0.8); border: 1px dashed #555; margin-top: 20px;
+            display: none; flex-direction: column; gap: 15px;
+            position: absolute; top: 0; bottom: 0; left: 0; right: 0;
+            padding: 20px 30px; background: #050505; z-index: 50; overflow-y: auto;
         }
         .config-group { display: flex; flex-direction: column; gap: 5px; }
         .config-group label { color: #aaa; font-size: 0.9em; text-transform: uppercase; }
@@ -581,21 +583,18 @@
             .cp-btn       { width: 55px; height: 40px; }
             .cp-screen    { font-size: 0.75em; }
 
-            /* Disable vignette but keep scanlines on mobile */
-            .crt-overlays::after  { display: none; }
+            /* Disable edge vignette on mobile */
+            .crt-overlays::after { display: none; }
             #monitor { box-shadow: none; }
 
-            /* Scanlines on drawers — pointer-events none, no opacity change */
+            /* CRT scanlines on drawers — no flicker/opacity, just scanlines */
             .side-drawer::before {
                 content: " "; pointer-events: none;
-                position: absolute; inset: 0;
-                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%);
+                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.12) 50%);
                 background-size: 100% 3px;
-                z-index: 10; border-radius: inherit;
+                z-index: 1; border-radius: inherit;
             }
-
-            /* Brighter tabs so they show through scanlines */
-            #log-tab, #tape-tab { color: #a3ffaa; text-shadow: 0 0 8px rgba(163,255,170,0.8); border-color: #555; }
         #tape-drawer { overflow-y: auto; padding-bottom: 24px; }
             .tp-cover-wrap     { max-height: 80px; }
             .tp-btn            { font-size: 0.7em !important; padding: 5px 6px; }

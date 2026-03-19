@@ -153,6 +153,7 @@ function showMain() {
     bootScreen.style.display = 'none';
     mainScreen.style.display = 'flex';
     screenEl.scrollTop       = 0;
+    document.getElementById('mobile-tab-strip').classList.remove('boot-hidden');
     loadStoredDates();
     initSystemConfig();
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
@@ -172,18 +173,26 @@ function initSystemConfig() {
 
 btnOpenConfig.addEventListener('click', () => {
     sysLog("Operator accessed System Configuration.");
+    setGridScrollPosition(screenEl.scrollTop);
+    mainHeader.style.display      = 'none';
     agentGrid.style.display       = 'none';
     blacksiteBanner.style.display = 'none';
-    configPanel.style.display     = 'flex';
+    document.getElementById('main-footer').style.display = 'none';
     btnOpenConfig.style.display   = 'none';
+    screenEl.style.overflowY      = 'hidden';
+    configPanel.style.display     = 'flex';
 });
 
 btnCloseConfig.addEventListener('click', () => {
     sysLog("Operator closed System Configuration.");
     configPanel.style.display     = 'none';
+    mainHeader.style.display      = 'block';
     agentGrid.style.display       = 'grid';
     blacksiteBanner.style.display = 'block';
+    document.getElementById('main-footer').style.display = 'block';
     btnOpenConfig.style.display   = 'block';
+    screenEl.style.overflowY      = 'auto';
+    screenEl.scrollTop            = gridScrollPosition;
     initSystemConfig();
 });
 
