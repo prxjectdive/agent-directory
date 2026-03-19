@@ -584,7 +584,15 @@
             /* Disable vignette but keep scanlines on mobile */
             .crt-overlays::after  { display: none; }
             #monitor { box-shadow: none; }
-            .side-drawer::before  { display: none; }
+
+            /* Scanlines on drawers — pointer-events none, no opacity change */
+            .side-drawer::before {
+                content: " "; pointer-events: none;
+                position: absolute; inset: 0;
+                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.15) 50%);
+                background-size: 100% 3px;
+                z-index: 10; border-radius: inherit;
+            }
 
             /* Brighter tabs so they show through scanlines */
             #log-tab, #tape-tab { color: #a3ffaa; text-shadow: 0 0 8px rgba(163,255,170,0.8); border-color: #555; }
