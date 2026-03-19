@@ -581,18 +581,13 @@
             .cp-btn       { width: 55px; height: 40px; }
             .cp-screen    { font-size: 0.75em; }
 
-            /* Disable edge vignette on mobile */
-            .crt-overlays::after { display: none; }
+            /* Disable vignette but keep scanlines on mobile */
+            .crt-overlays::after  { display: none; }
             #monitor { box-shadow: none; }
+            .side-drawer::before  { display: none; }
 
-            /* CRT scanlines on drawers — no flicker/opacity, just scanlines */
-            .side-drawer::before {
-                content: " "; pointer-events: none;
-                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.12) 50%);
-                background-size: 100% 3px;
-                z-index: 1; border-radius: inherit;
-            }
+            /* Brighter tabs so they show through scanlines */
+            #log-tab, #tape-tab { color: #a3ffaa; text-shadow: 0 0 8px rgba(163,255,170,0.8); border-color: #555; }
         #tape-drawer { overflow-y: auto; padding-bottom: 24px; }
             .tp-cover-wrap     { max-height: 80px; }
             .tp-btn            { font-size: 0.7em !important; padding: 5px 6px; }
