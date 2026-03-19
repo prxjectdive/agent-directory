@@ -35,7 +35,7 @@ export async function initMusicPlayer() {
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('play',  () => { initAudioContext(); startScope(); });
-    audio.addEventListener('pause', () => stopScope());
+    audio.addEventListener('pause', () => { stopScope(); });
 
     if (tracks.length) loadTrack(0);
 }
@@ -70,6 +70,7 @@ function startScope() {
     const drawSamples = 1024;
 
     function draw() {
+        if (!playing) { stopScope(); return; }
         animFrameId = requestAnimationFrame(draw);
         analyserL.getFloatTimeDomainData(dataL);
         analyserR.getFloatTimeDomainData(dataR);
@@ -83,8 +84,8 @@ function startScope() {
             const cx = W / 2;
             const cy = H / 2;
 
-            // Phosphor fade trail
-            ctx.fillStyle = 'rgba(3, 10, 3, 0.35)';
+            // Full clear each frame
+            ctx.fillStyle = '#030a03';
             ctx.fillRect(0, 0, W, H);
 
             // Dotted grid — centre x/y only
@@ -139,24 +140,8 @@ function stopScope() {
         const canvas = container.querySelector('.tp-scope-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const W = canvas.width;
-        const H = canvas.height;
-
-        ctx.fillStyle = '#030a03';
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.setLineDash([2, 4]);
-        ctx.strokeStyle = 'rgba(0, 55, 0, 0.5)';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Idle dot at center
-        ctx.beginPath();
-        ctx.arc(W / 2, H / 2, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 200, 60, 0.5)';
-        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     });
 }
 
@@ -244,8 +229,8 @@ function renderInto(container) {
 
 function wireControls(container) {
     container.querySelector('.tp-play')?.addEventListener('click', togglePlay);
-    container.querySelector('.tp-prev')?.addEventListener('click', () => { advanceTrack(-1); if (playing) audio.play(); });
-    container.querySelector('.tp-next')?.addEventListener('click', () => { advanceTrack(1);  if (playing) audio.play(); });
+    container.querySelector('.tp-prev')?.addEventListener('click', () => { const wasPlaying = playing; advanceTrack(-1); if (wasPlaying) { audio.play(); playing = true; updateAllViews(); } });
+    container.querySelector('.tp-next')?.addEventListener('click', () => { const wasPlaying = playing; advanceTrack(1);  if (wasPlaying) { audio.play(); playing = true; updateAllViews(); } });
     container.querySelector('.tp-shuffle')?.addEventListener('click', toggleShuffle);
     container.querySelector('.tp-loop')?.addEventListener('click', cycleLoop);
 
@@ -279,7 +264,7 @@ function loadTrack(index) {
 
 function togglePlay() {
     if (!tracks.length) return;
-    if (playing) { audio.pause(); playing = false; }
+    if (playing) { audio.pause(); playing = false; stopScope(); }
     else         { audio.play();  playing = true;  }
     updateAllViews();
 }
