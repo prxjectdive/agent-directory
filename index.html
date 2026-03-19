@@ -533,15 +533,15 @@
         #log-drawer-output::-webkit-scrollbar { display: none; }
 
         #tape-drawer-output {
-            flex: 1; overflow-y: auto; scrollbar-width: none;
-            display: flex; flex-direction: column; min-height: 0;
+            flex: 1; overflow-y: visible; scrollbar-width: none;
+            display: flex; flex-direction: column;
         }
         #tape-drawer-output::-webkit-scrollbar { display: none; }
         #tape-drawer-output .tape-player {
-            flex: 1; min-height: 0; display: flex; flex-direction: column;
+            display: flex; flex-direction: column;
         }
         #tape-drawer-output .tp-tracklist {
-            flex: 1; min-height: 0;
+            max-height: none;
         }
 
         .drawer-overlay {
@@ -593,7 +593,7 @@
                 background-size: 100% 3px;
                 z-index: 1; border-radius: inherit;
             }
-            #tape-drawer { padding-bottom: 20px; }
+        #tape-drawer { overflow-y: auto; padding-bottom: 24px; }
             .tp-cover-wrap     { max-height: 80px; }
             .tp-btn            { font-size: 0.7em !important; padding: 5px 6px; }
             .tp-controls       { gap: 4px; }
@@ -836,7 +836,7 @@
 <div class="drawer-overlay" id="tape-overlay"></div>
 <div class="side-drawer" id="tape-drawer">
     <div class="drawer-header">
-        <span>TAPE DECK // PRXJECTDIVE</span>
+        <span>TAPE DECK // MUSIC PLAYER</span>
         <button class="drawer-close" id="tape-drawer-close">✕</button>
     </div>
     <div id="tape-drawer-output"></div>
