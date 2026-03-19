@@ -177,7 +177,6 @@ btnOpenConfig.addEventListener('click', () => {
     agentGrid.style.display       = 'none';
     blacksiteBanner.style.display = 'none';
     btnOpenConfig.style.display   = 'none';
-    screenEl.style.overflowY      = 'hidden';
     configPanel.style.display     = 'flex';
 });
 
@@ -187,7 +186,6 @@ btnCloseConfig.addEventListener('click', () => {
     agentGrid.style.display       = 'grid';
     blacksiteBanner.style.display = 'block';
     btnOpenConfig.style.display   = 'block';
-    screenEl.style.overflowY      = 'auto';
     screenEl.scrollTop            = gridScrollPosition;
     initSystemConfig();
 });
