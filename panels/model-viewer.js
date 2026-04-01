@@ -257,7 +257,7 @@ export function initModelViewer(container) {
 // ============================================================================
 // RESIZE
 // ============================================================================
-function handleResize() {
+export function handleResize() {
     if (!renderer || !wrapperEl) return;
     const W = wrapperEl.clientWidth;
     const H = wrapperEl.clientHeight;

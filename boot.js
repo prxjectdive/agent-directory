@@ -4,7 +4,7 @@
 import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
-import { initModelViewer, loadAgentModel, MODEL_REGISTRY } from './panels/model-viewer.js';
+import { initModelViewer, loadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
 import './audio.js'; // registers PTT listeners
 
 // ============================================================================
@@ -56,7 +56,7 @@ panelTabs.forEach(tab => {
         panelLog.style.display   = target === 'log'   ? 'flex' : 'none';
         panelTape.style.display  = target === 'tape'  ? 'flex' : 'none';
         panelModel.style.display = target === 'model' ? 'flex' : 'none';
-        if (target === 'model') initModelViewer(panelModel);
+        if (target === 'model') { initModelViewer(panelModel); modelViewerResize(); }
     });
 });
 
