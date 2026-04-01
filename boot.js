@@ -1,9 +1,10 @@
 // ============================================================================
 // BOOT — boot sequence, config panel, agent directory, drawers, entry point
 // ============================================================================
-import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition } from './core.js';
+import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
+import { initModelViewer, loadAgentModel, MODEL_REGISTRY } from './panels/model-viewer.js';
 import './audio.js'; // registers PTT listeners
 
 // ============================================================================
@@ -31,6 +32,7 @@ const evalButtons     = document.querySelectorAll('.eval-trigger');
 const panelTabs       = document.querySelectorAll('.panel-tab');
 const panelLog        = document.getElementById('panel-log');
 const panelTape       = document.getElementById('panel-tape');
+const panelModel      = document.getElementById('panel-model');
 
 // Mobile drawers
 const logTab          = document.getElementById('log-tab');
@@ -51,8 +53,10 @@ panelTabs.forEach(tab => {
         const target = tab.dataset.panel;
         panelTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        panelLog.style.display  = target === 'log'  ? 'flex' : 'none';
-        panelTape.style.display = target === 'tape' ? 'flex' : 'none';
+        panelLog.style.display   = target === 'log'   ? 'flex' : 'none';
+        panelTape.style.display  = target === 'tape'  ? 'flex' : 'none';
+        panelModel.style.display = target === 'model' ? 'flex' : 'none';
+        if (target === 'model') initModelViewer(panelModel);
     });
 });
 
@@ -156,6 +160,7 @@ function showMain() {
     document.getElementById('mobile-tab-strip').classList.remove('boot-hidden');
     loadStoredDates();
     initSystemConfig();
+    initModelViewer(panelModel);
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
     sysLog("Operator logged in to agent directory.", "warn");
 }
@@ -226,6 +231,9 @@ evalButtons.forEach(button => {
             localStorage.setItem(`eval_date_${agentId}`, dateStr);
         }
         openChatInterface(agentId);
+        // Preload 3D model in background if available
+        initModelViewer(panelModel);
+        if (MODEL_REGISTRY[agentId]) loadAgentModel(agentId);
     });
 });
 
