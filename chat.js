@@ -141,7 +141,7 @@ export function loadChatHistory(agentId) {
 // ============================================================================
 // OPEN / CLOSE CHAT
 // ============================================================================
-export function openChatInterface(agentId) {
+export function openChatInterface(agentId, pushHistory = true) {
     setActiveAgentId(agentId);
     mainHeader.style.display    = 'none';
     mainFooter.style.display    = 'none';
@@ -154,7 +154,7 @@ export function openChatInterface(agentId) {
 
     loadChatHistory(agentId);
     updateSendButton();
-    history.pushState({ view: 'chat', agentId }, '');
+    if (pushHistory) history.pushState({ view: 'chat', agentId }, '');
 
     // Desync: link
     if (!getLinkedAgent()) {
@@ -560,6 +560,12 @@ chatInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
 // CROSS-MODULE EVENTS
 // ============================================================================
 document.addEventListener('open-chat', (e) => openChatInterface(e.detail.agentId));
+
+// Browser back button from chat → grid
+document.addEventListener('nav-back-to-grid', () => btnBackGrid.click());
+
+// Browser forward button to chat (no history push — already in stack)
+document.addEventListener('nav-open-chat', (e) => openChatInterface(e.detail.agentId, false));
 
 // Audio module: comms enabled/disabled → add system message
 document.addEventListener('add-system-msg', (e) => addMessageToChat("SYSTEM", e.detail.text, e.detail.color));
