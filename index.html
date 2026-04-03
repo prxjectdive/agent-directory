@@ -492,7 +492,7 @@
             z-index: 200; flex-direction: column; gap: 4px;
         }
 
-        #log-tab, #tape-tab {
+        #log-tab, #tape-tab, #model-tab {
             background: #0a0a0a; border: 1px solid #333; border-right: none;
             padding: 8px 6px; cursor: pointer;
             writing-mode: vertical-rl; text-orientation: mixed;
@@ -554,7 +554,7 @@
            ========================================= */
         @media (max-width: 850px) {
             #mobile-tab-strip { display: flex; }
-            #log-drawer, #tape-drawer { display: flex; }
+            #log-drawer, #tape-drawer, #model-drawer { display: flex; }
             .drawer-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
             .drawer-overlay.open { opacity: 1; pointer-events: all; }
 
@@ -582,7 +582,7 @@
             .cp-screen    { font-size: 0.75em; }
 
             /* Brighter tabs so they show through scanlines */
-            #log-tab, #tape-tab { color: #a3ffaa; text-shadow: 0 0 8px rgba(163,255,170,0.8); border-color: #555; }
+            #log-tab, #tape-tab, #model-tab { color: #a3ffaa; text-shadow: 0 0 8px rgba(163,255,170,0.8); border-color: #555; }
 
             /* Disable edge vignette on mobile */
             .crt-overlays::after { display: none; }
@@ -813,7 +813,9 @@
         <div id="terminal-output"></div>
     </div>
     <div class="panel-content" id="panel-tape"></div>
-    <div class="panel-content" id="panel-model" style="display:none;"></div>
+    <div class="panel-content" id="panel-model" style="display:none;">
+        <div class="terminal-header">AGENT MODELS // 3D VIEWER</div>
+    </div>
     <div class="panel-tabs">
         <button class="panel-tab active" data-panel="log">LOG</button>
         <button class="panel-tab" data-panel="tape">TAPE</button>
@@ -825,6 +827,7 @@
 <div id="mobile-tab-strip">
     <div id="log-tab">LOG</div>
     <div id="tape-tab">TAPE</div>
+    <div id="model-tab">3D</div>
 </div>
 
 <!-- LOG DRAWER (mobile) -->
@@ -845,6 +848,16 @@
         <button class="drawer-close" id="tape-drawer-close">✕</button>
     </div>
     <div id="tape-drawer-output"></div>
+</div>
+
+<!-- MODEL DRAWER (mobile) -->
+<div class="drawer-overlay" id="model-overlay"></div>
+<div class="side-drawer" id="model-drawer">
+    <div class="drawer-header">
+        <span>AGENT MODELS // 3D VIEWER</span>
+        <button class="drawer-close" id="model-drawer-close">✕</button>
+    </div>
+    <div id="model-drawer-output" style="flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;"></div>
 </div>
 
 <script type="importmap">

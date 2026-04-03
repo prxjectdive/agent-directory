@@ -46,16 +46,6 @@ export function initModelViewer(container) {
     container.style.padding       = '1.5vw';
     container.style.overflow      = 'hidden';
 
-    // -- Header
-    const header = document.createElement('div');
-    header.style.cssText = `
-        flex-shrink:0; font-size:0.85em; color:#888;
-        border-bottom:1px dashed #444; padding-bottom:10px;
-        margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;
-    `;
-    header.textContent = 'AGENT MODELS // 3D VIEWER';
-    container.appendChild(header);
-
     // -- Canvas wrapper (takes remaining space)
     wrapperEl = document.createElement('div');
     wrapperEl.style.cssText = 'position:relative; flex:1; min-height:0; overflow:hidden; background:#000;';
@@ -112,7 +102,10 @@ export function initModelViewer(container) {
         flex-shrink:0; font-size:0.65em; color:#555;
         padding-top:8px; letter-spacing:1px; text-transform:uppercase;
     `;
-    hint.textContent = 'DRAG: ROTATE  //  SCROLL: ZOOM  //  RIGHT-DRAG: PAN';
+    const onMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
+    hint.textContent = onMobile
+        ? 'DRAG: ROTATE  //  PINCH: ZOOM  //  TWO-FINGER DRAG: PAN'
+        : 'DRAG: ROTATE  //  SCROLL: ZOOM  //  RIGHT-DRAG: PAN';
     container.appendChild(hint);
 
     // ---- Three.js ----

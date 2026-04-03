@@ -1,7 +1,7 @@
 // ============================================================================
 // BOOT — boot sequence, config panel, agent directory, drawers, entry point
 // ============================================================================
-import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId } from './core.js';
+import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
 import { initModelViewer, loadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
@@ -37,6 +37,7 @@ const panelModel      = document.getElementById('panel-model');
 // Mobile drawers
 const logTab          = document.getElementById('log-tab');
 const tapeTab         = document.getElementById('tape-tab');
+const modelTab        = document.getElementById('model-tab');
 const logDrawer       = document.getElementById('log-drawer');
 const logOverlay      = document.getElementById('log-overlay');
 const logDrawerOutput = document.getElementById('log-drawer-output');
@@ -44,6 +45,10 @@ const logDrawerClose  = document.getElementById('log-drawer-close');
 const tapeDrawer      = document.getElementById('tape-drawer');
 const tapeOverlay     = document.getElementById('tape-overlay');
 const tapeDrawerClose = document.getElementById('tape-drawer-close');
+const modelDrawer     = document.getElementById('model-drawer');
+const modelOverlay    = document.getElementById('model-overlay');
+const modelDrawerOutput = document.getElementById('model-drawer-output');
+const modelDrawerClose  = document.getElementById('model-drawer-close');
 
 // ============================================================================
 // DESKTOP PANEL TABS
@@ -98,9 +103,32 @@ tapeTab.addEventListener('click', openTapeDrawer);
 tapeDrawerClose.addEventListener('click', closeTapeDrawer);
 tapeOverlay.addEventListener('click', closeTapeDrawer);
 
+// ============================================================================
+// MOBILE MODEL DRAWER
+// ============================================================================
+function openModelDrawer() {
+    closeAllDrawers();
+    modelDrawer.classList.add('open');
+    modelOverlay.classList.add('open');
+    setTimeout(() => {
+        initModelViewer(modelDrawerOutput);
+        modelViewerResize();
+        if (activeAgentId && MODEL_REGISTRY[activeAgentId]) loadAgentModel(activeAgentId);
+    }, 300);
+}
+function closeModelDrawer() {
+    modelDrawer.classList.remove('open');
+    modelOverlay.classList.remove('open');
+}
+
+modelTab.addEventListener('click', openModelDrawer);
+modelDrawerClose.addEventListener('click', closeModelDrawer);
+modelOverlay.addEventListener('click', closeModelDrawer);
+
 function closeAllDrawers() {
     closeLogDrawer();
     closeTapeDrawer();
+    closeModelDrawer();
 }
 
 // ============================================================================
@@ -160,7 +188,7 @@ function showMain() {
     document.getElementById('mobile-tab-strip').classList.remove('boot-hidden');
     loadStoredDates();
     initSystemConfig();
-    initModelViewer(panelModel);
+    if (!isMobile) initModelViewer(panelModel);
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
     sysLog("Operator logged in to agent directory.", "warn");
 }
@@ -231,9 +259,11 @@ evalButtons.forEach(button => {
             localStorage.setItem(`eval_date_${agentId}`, dateStr);
         }
         openChatInterface(agentId);
-        // Preload 3D model in background if available
-        initModelViewer(panelModel);
-        if (MODEL_REGISTRY[agentId]) loadAgentModel(agentId);
+        // Preload 3D model in background on desktop only
+        if (!isMobile) {
+            initModelViewer(panelModel);
+            if (MODEL_REGISTRY[agentId]) loadAgentModel(agentId);
+        }
     });
 });
 
