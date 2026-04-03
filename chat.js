@@ -154,6 +154,7 @@ export function openChatInterface(agentId) {
 
     loadChatHistory(agentId);
     updateSendButton();
+    history.pushState({ view: 'chat', agentId }, '');
 
     // Desync: link
     if (!getLinkedAgent()) {
@@ -197,6 +198,7 @@ btnBackGrid.addEventListener('click', () => {
     btnOpenConfig.style.display   = 'block';
     screenEl.style.overflowY     = 'auto';
     screenEl.scrollTop           = gridScrollPosition;
+    history.replaceState({ view: 'grid' }, '');
 });
 
 // ============================================================================
@@ -557,7 +559,6 @@ chatInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
 // ============================================================================
 // CROSS-MODULE EVENTS
 // ============================================================================
-// VALA easter egg click → open chat
 document.addEventListener('open-chat', (e) => openChatInterface(e.detail.agentId));
 
 // Audio module: comms enabled/disabled → add system message

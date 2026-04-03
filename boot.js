@@ -3,6 +3,7 @@
 // ============================================================================
 import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
+import { stopTTS } from './audio.js';
 import { initMusicPlayer } from './panels/music-player.js';
 import { initModelViewer, loadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
 import './audio.js'; // registers PTT listeners
@@ -33,6 +34,7 @@ const panelTabs       = document.querySelectorAll('.panel-tab');
 const panelLog        = document.getElementById('panel-log');
 const panelTape       = document.getElementById('panel-tape');
 const panelModel      = document.getElementById('panel-model');
+const chatInterface   = document.getElementById('chat-interface');
 
 // Mobile drawers
 const logTab          = document.getElementById('log-tab');
@@ -189,6 +191,7 @@ function showMain() {
     loadStoredDates();
     initSystemConfig();
     if (!isMobile) initModelViewer(panelModel);
+    history.pushState({ view: 'grid' }, '');
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
     sysLog("Operator logged in to agent directory.", "warn");
 }
@@ -211,6 +214,7 @@ btnOpenConfig.addEventListener('click', () => {
     blacksiteBanner.style.display = 'none';
     btnOpenConfig.style.display   = 'none';
     configPanel.style.display     = 'flex';
+    history.pushState({ view: 'config' }, '');
 });
 
 btnCloseConfig.addEventListener('click', () => {
@@ -221,6 +225,7 @@ btnCloseConfig.addEventListener('click', () => {
     btnOpenConfig.style.display   = 'block';
     screenEl.scrollTop            = gridScrollPosition;
     initSystemConfig();
+    history.replaceState({ view: 'grid' }, '');
 });
 
 btnSaveConfig.addEventListener('click', () => {
@@ -271,4 +276,57 @@ evalButtons.forEach(button => {
 // INIT
 // ============================================================================
 await Promise.all([loadAllPrompts(), initMusicPlayer()]);
+history.replaceState({ view: 'boot' }, '');
 setTimeout(runBoot, 500);
+
+// ============================================================================
+// HISTORY ROUTER — single popstate listener for all views
+// ============================================================================
+window.addEventListener('popstate', (e) => {
+    const view = e.state?.view;
+
+    if (view === 'boot') {
+        // Back to boot screen
+        mainScreen.style.display = 'none';
+        bootScreen.style.display = 'flex';
+        isSystemMainActive = false;
+
+    } else if (view === 'grid') {
+        if (activeAgentId) {
+            // Back from chat → grid
+            sysLog("Operator returned to Agent Directory.");
+            setActiveAgentId(null);
+            stopTTS();
+            updateSendButton();
+            chatInterface.style.display   = 'none';
+            mainHeader.style.display      = 'block';
+            mainFooter.style.display      = 'block';
+            agentGrid.style.display       = 'grid';
+            blacksiteBanner.style.display = 'block';
+            btnOpenConfig.style.display   = 'block';
+            screenEl.style.overflowY      = 'auto';
+            screenEl.scrollTop            = gridScrollPosition;
+        } else {
+            // Back from config → grid
+            sysLog("Operator closed System Configuration.");
+            configPanel.style.display     = 'none';
+            agentGrid.style.display       = 'grid';
+            blacksiteBanner.style.display = 'block';
+            btnOpenConfig.style.display   = 'block';
+            screenEl.scrollTop            = gridScrollPosition;
+            initSystemConfig();
+        }
+
+    } else if (view === 'config') {
+        // Forward to config (after pressing back from config then forward)
+        setGridScrollPosition(screenEl.scrollTop);
+        agentGrid.style.display       = 'none';
+        blacksiteBanner.style.display = 'none';
+        btnOpenConfig.style.display   = 'none';
+        configPanel.style.display     = 'flex';
+
+    } else if (view === 'chat') {
+        // Forward to chat (after pressing back from chat then forward)
+        openChatInterface(e.state.agentId);
+    }
+});
