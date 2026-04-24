@@ -4,7 +4,7 @@
 
 export const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
 export const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/";
-export const defaultModel    = "stepfun/step-3.5-flash:free";
+export const defaultModel    = "nvidia/nemotron-3-super-120b-a12b:free";
 
 export let gridScrollPosition  = 0;
 export let activeAgentId       = null;
