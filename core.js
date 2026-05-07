@@ -2,7 +2,8 @@
 // CORE — shared state, constants, and utilities
 // ============================================================================
 
-export const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
+const MOBILE_UA_PATTERN = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+export const isMobile = MOBILE_UA_PATTERN.test(navigator.userAgent) || window.innerWidth <= 850;
 export const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/";
 export const defaultModel    = "nvidia/nemotron-3-super-120b-a12b:free";
 
@@ -41,7 +42,9 @@ export async function loadAllPrompts() {
         const lorebookRes = await fetch("data/lorebook.json");
         if (!lorebookRes.ok) throw new Error(`HTTP ${lorebookRes.status} for lorebook.json`);
         window.lorebook = await lorebookRes.json();
-    } catch (err) {}
+    } catch (err) {
+        console.error("Failed to load prompt data:", err);
+    }
 }
 
 // ============================================================================
@@ -186,7 +189,7 @@ export function sysLog(message, type = "sys") {
                     valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${msg}</span>`;
                     valaDiv.onclick = () => {
                         sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
-                        // Dispatch events — handled by chat.js and ui.js
+                        // Dispatch events — handled by chat.js and boot.js
                         document.dispatchEvent(new CustomEvent('close-log-drawer'));
                         document.dispatchEvent(new CustomEvent('open-chat', { detail: { agentId: 'VALA' } }));
                     };
