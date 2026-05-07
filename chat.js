@@ -378,11 +378,6 @@ async function handleSend() {
     const apiMessages        = [{ role: "system", content: combinedSystemPrompt }, ...buildApiMsgsFromLog(logHistory.slice(-200), activeAgentId)];
     const modelTemp          = 0.8;
 
-    console.group(`[SEND] ${activeAgentId}`);
-    console.log('System prompt:', combinedSystemPrompt);
-    console.log('Messages:', apiMessages);
-    console.groupEnd();
-
     let responseText;
     try {
         responseText = await callAPI(endpoint, headers, { model, messages: apiMessages, temperature: modelTemp });
@@ -406,11 +401,6 @@ async function handleSend() {
         const linkedLog       = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
         const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
         const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
-
-        console.group(`[OPERATOR MSG] ${linkedAgentId}`);
-        console.log('System prompt:', linkedSysPrompt);
-        console.log('Messages:', linkedApiMessages);
-        console.groupEnd();
 
         const linkedTypingId = "lnk-op-" + Date.now();
         renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
@@ -464,11 +454,6 @@ async function handleLink() {
     const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const linkedApiMsgs   = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
 
-    console.group(`[LINK] Step 1 — ${linkedAgentId}`);
-    console.log('System prompt:', linkedSysPrompt);
-    console.log('Messages:', linkedApiMsgs);
-    console.groupEnd();
-
     const linkedTypingId = "lnk-t-" + Date.now();
     renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
 
@@ -493,11 +478,6 @@ async function handleLink() {
     const activeLog    = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
     const activeSysPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, buildLore(activeLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const activeApiMsgs   = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
-
-    console.group(`[LINK] Step 2 — ${activeAgentId}`);
-    console.log('System prompt:', activeSysPrompt);
-    console.log('Messages:', activeApiMsgs);
-    console.groupEnd();
 
     const activeTypingId = "act-t-" + Date.now();
     renderMessage(activeAgentId, "Establishing connection...", agentProfiles[activeAgentId].color, activeTypingId);

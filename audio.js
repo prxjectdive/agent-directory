@@ -1,7 +1,7 @@
 // ============================================================================
 // AUDIO — TTS worker, STT/Moonshine, PTT, radio command
 // ============================================================================
-import { sysLog, defaultProxyUrl, defaultModel, agentProfiles } from './core.js';
+import { sysLog, isMobile } from './core.js';
 
 // DOM refs
 const muteStatusText = document.getElementById('mute-status-text');
@@ -61,7 +61,7 @@ export async function loadKokoro() {
             }
         };
         ttsWorker.onerror = (e) => reject(e);
-        ttsWorker.postMessage({ type: 'init', isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850 });
+        ttsWorker.postMessage({ type: 'init', isMobile });
     });
     return ttsReady;
 }
@@ -145,7 +145,9 @@ async function processTTSQueue() {
             await new Promise(resolve => { source.onended = resolve; source.start(); });
             ttsCurrentSource = null;
             sysLog('Agent initiated voice transmission.');
-        } catch(e) {}
+        } catch (e) {
+            console.error("TTS processing failed:", e);
+        }
     }
     ttsPlaying = false;
 }
@@ -269,7 +271,9 @@ export async function handlePttStart() {
         if (typeof moonshineTranscriber.reset === 'function') moonshineTranscriber.reset();
         await moonshineTranscriber.start();
         if (moonshineModelLoaded && !isMuted) muteStatusText.textContent = "COMMS: ENABLED";
-    } catch(e) {}
+    } catch (e) {
+        console.error("PTT start failed:", e);
+    }
 
     isPttStarting = false;
     if (!isPttActive) {
