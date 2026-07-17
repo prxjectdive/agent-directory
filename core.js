@@ -5,7 +5,7 @@
 const MOBILE_UA_PATTERN = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 export const isMobile = MOBILE_UA_PATTERN.test(navigator.userAgent) || window.innerWidth <= 850;
 export const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/";
-export const defaultModel    = "nvidia/nemotron-3-super-120b-a12b:free";
+export const defaultModel    = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
 export let gridScrollPosition  = 0;
 export let activeAgentId       = null;
