@@ -3,7 +3,12 @@
 // ============================================================================
 
 const MOBILE_UA_PATTERN = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-export const isMobile = MOBILE_UA_PATTERN.test(navigator.userAgent) || window.innerWidth <= 850;
+function computeIsMobile() {
+    return MOBILE_UA_PATTERN.test(navigator.userAgent) || window.innerWidth <= 850;
+}
+// Live binding — importers always see the current value, kept fresh on resize
+export let isMobile = computeIsMobile();
+window.addEventListener('resize', () => { isMobile = computeIsMobile(); });
 export const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/";
 export const defaultModel    = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
