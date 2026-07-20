@@ -1,5 +1,5 @@
 // ============================================================================
-// BOOT — boot sequence, config panel, agent directory, drawers, entry point
+// BOOT — entry point: config panel, agent directory, drawers, history router
 // ============================================================================
 import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
@@ -11,8 +11,6 @@ import './audio.js'; // registers PTT listeners
 // DOM REFS
 // ============================================================================
 const screenEl        = document.getElementById('screen');
-const bootScreen      = document.getElementById('boot-screen');
-const bootDiv         = document.getElementById('boot-text');
 const mainScreen      = document.getElementById('main-content');
 const mainHeader      = document.getElementById('main-header');
 const agentGrid       = document.getElementById('agent-grid');
@@ -132,64 +130,15 @@ function closeAllDrawers() {
 }
 
 // ============================================================================
-// BOOT SEQUENCE
+// MAIN SCREEN — shown immediately on load (boot sequence removed)
 // ============================================================================
-const bootSequence = [
-    "BIOS DATE 04/18/74 19:01:23 VER 1.04",
-    "CPU: PRXJECT NEURAL PROCESSOR 8.4 GHz",
-    "MEMORY CHECK: 1048576K OK",
-    "LOADING KERNEL MODULES ................. OK",
-    "MOUNTING ENCRYPTED VOLUMES ............. OK",
-    "ESTABLISHING SECURE CONNECTION ......... OK",
-    "DECRYPTING AGENT RECORDS ............... OK",
-    " ",
-    "WARNING: UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED.",
-    " ",
-];
-
-const enterKeyHandler = (e) => { if (e.key === 'Enter') showMain(); };
-let isSystemMainActive = false;
-
-async function runBoot() {
-    for (let text of bootSequence) {
-        const p = document.createElement('p');
-        bootDiv.appendChild(p);
-        if (text.trim() === "") { p.innerHTML = "&nbsp;"; } else {
-            p.textContent = "> ";
-            for (let char of text) { p.textContent += char; await new Promise(r => setTimeout(r, 5)); }
-        }
-        await new Promise(r => setTimeout(r, 50));
-        screenEl.scrollTop = screenEl.scrollHeight;
-    }
-
-    const btn = document.createElement('button');
-    btn.className  = 'btn pulse';
-    btn.style.cssText = 'margin-top: 20px; width: auto; border: none; padding-left: 0;';
-    btn.onclick    = showMain;
-    bootDiv.appendChild(btn);
-
-    const finalMsg = "> PRESS ENTER OR CLICK HERE TO EXPLORE ";
-    for (let char of finalMsg) {
-        btn.innerHTML += char;
-        await new Promise(r => setTimeout(r, 10));
-        screenEl.scrollTop = screenEl.scrollHeight;
-    }
-    btn.innerHTML += "<span class='cursor'></span>";
-    window.addEventListener('keydown', enterKeyHandler);
-}
-
 function showMain() {
-    if (isSystemMainActive) return;
-    isSystemMainActive = true;
-    window.removeEventListener('keydown', enterKeyHandler);
-    bootScreen.style.display = 'none';
     mainScreen.style.display = 'flex';
     screenEl.scrollTop       = 0;
-    document.getElementById('mobile-tab-strip').classList.remove('boot-hidden');
     loadStoredDates();
     initSystemConfig();
     if (!isMobile) initModelViewer(panelModel);
-    history.pushState({ view: 'grid' }, '');
+    history.replaceState({ view: 'grid' }, '');
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
     sysLog("Operator logged in to agent directory.", "warn");
 }
@@ -274,8 +223,7 @@ evalButtons.forEach(button => {
 // INIT
 // ============================================================================
 await Promise.all([loadAllPrompts(), initMusicPlayer()]);
-history.replaceState({ view: 'boot' }, '');
-setTimeout(runBoot, 500);
+showMain();
 
 // ============================================================================
 // HISTORY ROUTER — single popstate listener for all views
@@ -283,16 +231,8 @@ setTimeout(runBoot, 500);
 window.addEventListener('popstate', (e) => {
     const view = e.state?.view;
 
-    if (view === 'boot') {
-        // Back to boot screen
-        sysLog("Operator disconnected. Returning to standby.", "warn");
-        mainScreen.style.display  = 'none';
-        bootScreen.style.display  = 'flex';
-        isSystemMainActive        = false;
-
-    } else if (view === 'grid') {
-        // Back from chat or config — or forward from boot
-        bootScreen.style.display      = 'none';
+    if (view === 'grid') {
+        // Back from chat or config
         mainScreen.style.display      = 'flex';
         configPanel.style.display     = 'none';
         blacksiteBanner.style.display = 'block';
@@ -303,14 +243,13 @@ window.addEventListener('popstate', (e) => {
             // Coming from chat
             document.dispatchEvent(new CustomEvent('nav-back-to-grid'));
         } else {
-            // Coming from config or boot
+            // Coming from config
             sysLog("Operator returned to Agent Directory.");
             initSystemConfig();
         }
 
     } else if (view === 'config') {
         // Back from save, or forward from grid
-        bootScreen.style.display      = 'none';
         mainScreen.style.display      = 'flex';
         sysLog("Operator accessed System Configuration.");
         setGridScrollPosition(screenEl.scrollTop);
@@ -321,7 +260,6 @@ window.addEventListener('popstate', (e) => {
 
     } else if (view === 'chat') {
         // Forward to chat
-        bootScreen.style.display = 'none';
         mainScreen.style.display = 'flex';
         sysLog(`Operator resumed evaluation of Agent ${e.state.agentId}.`);
         document.dispatchEvent(new CustomEvent('nav-open-chat', { detail: { agentId: e.state.agentId } }));

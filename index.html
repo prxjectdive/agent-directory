@@ -180,15 +180,6 @@
         }
 
         /* =========================================
-           BOOT SEQUENCE
-           ========================================= */
-        #boot-screen {
-            height: 100%; display: flex; flex-direction: column;
-            justify-content: flex-end; padding-bottom: 20px; flex: 1;
-        }
-        #boot-text p { margin: 4px 0; font-size: 0.9em; }
-
-        /* =========================================
            AGENT GRID & CARDS
            ========================================= */
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 20px; }
@@ -611,11 +602,6 @@
     <div class="crt-overlays"></div>
     <div id="screen">
         <div id="screen-content">
-            <!-- BOOT SEQUENCE -->
-            <div id="boot-screen">
-                <div id="boot-text"></div>
-            </div>
-
             <!-- MAIN DIRECTORY -->
             <div id="main-content">
                 <div class="header" id="main-header">
