@@ -32,6 +32,21 @@ function stage(text) {
     self.postMessage({ type: 'stage', text });
 }
 
+// onnxruntime-web ships SIMD-only builds — without it there is no backend to
+// fall back to, so check before spending 380MB of downloads finding out.
+const SIMD_PROBE = new Uint8Array([
+    0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123,
+    3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11,
+]);
+function checkWasmSupport() {
+    if (typeof WebAssembly !== 'object') {
+        throw new Error('WebAssembly is disabled in this browser — voice cannot run here.');
+    }
+    if (!WebAssembly.validate(SIMD_PROBE)) {
+        throw new Error('this browser lacks WebAssembly SIMD, which the voice model requires.');
+    }
+}
+
 // A hung WASM init never rejects, so nothing downstream ever learns about it.
 function withTimeout(promise, ms, what) {
     return Promise.race([
@@ -116,6 +131,13 @@ async function init(isMobile) {
     // GitHub Pages does not serve.
     ort.env.wasm.numThreads = self.crossOriginIsolated ? (navigator.hardwareConcurrency || 4) : 1;
     ort.env.wasm.proxy = false;
+
+    // Report what the browser itself claims before trusting ORT's own probe —
+    // the two disagreeing means the detection is being blocked, not missing.
+    const simd = typeof WebAssembly === 'object' && WebAssembly.validate(SIMD_PROBE);
+    const gpu  = typeof navigator !== 'undefined' && 'gpu' in navigator;
+    stage(`env simd=${simd} webgpu=${gpu}`);
+    checkWasmSupport();
 
     const providers = isMobile ? ['wasm'] : ['webgpu', 'wasm'];
     stage(`backend ${providers[0]}, ${ort.env.wasm.numThreads} thread(s)`);
