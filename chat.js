@@ -120,6 +120,16 @@ export function removeMessage(id) {
     if (el) el.remove();
 }
 
+// Repaint a pending "Establishing connection..." bubble while callAPI retries
+const RECONNECT_COLOR = '#ffaa00';
+function markReconnecting(id) {
+    const bubble = document.getElementById(id)?.querySelector('.chat-bubble');
+    if (!bubble) return;
+    bubble.style.borderColor = RECONNECT_COLOR;
+    bubble.style.color       = RECONNECT_COLOR;
+    bubble.innerHTML         = '> [SYSTEM]: Signal interrupted. Reconnecting...';
+}
+
 // ============================================================================
 // CHAT HISTORY
 // ============================================================================
@@ -381,10 +391,10 @@ async function handleSend() {
 
     let responseText;
     try {
-        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages });
+        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages }, () => markReconnecting(typingId));
     } catch {
         removeMessage(typingId);
-        addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
+        addMessageToChat("SYSTEM", "Connection lost. Transmission failed.", "#ff5555");
         sysLog(`Connection error communicating with Agent ${activeAgentId}.`, "err");
         unlockInput();
         return;
@@ -408,10 +418,10 @@ async function handleSend() {
 
         let lText;
         try {
-            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages });
+            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages }, () => markReconnecting(linkedTypingId));
         } catch {
             removeMessage(linkedTypingId);
-            renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
+            renderMessage("SYSTEM", `Connection lost. ${linkedAgentId} did not respond.`, "#ff5555");
             sysLog(`Connection error communicating with Agent ${linkedAgentId}.`, "err");
             unlockInput();
             return;
@@ -459,10 +469,10 @@ async function handleLink() {
 
     let linkedResponse;
     try {
-        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs });
+        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs }, () => markReconnecting(linkedTypingId));
     } catch {
         removeMessage(linkedTypingId);
-        renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
+        renderMessage("SYSTEM", `Connection lost. ${linkedAgentId} did not respond.`, "#ff5555");
         sysLog(`Link error: ${linkedAgentId} failed to respond.`, "err");
         restoreInput(); return;
     }
@@ -484,10 +494,10 @@ async function handleLink() {
 
     let activeResponse;
     try {
-        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs });
+        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs }, () => markReconnecting(activeTypingId));
     } catch {
         removeMessage(activeTypingId);
-        renderMessage(activeAgentId, "Error: Connection lost.", "#ff5555");
+        renderMessage("SYSTEM", `Connection lost. ${activeAgentId} did not respond.`, "#ff5555");
         sysLog(`Link error: ${activeAgentId} failed to respond.`, "err");
         restoreInput(); return;
     }

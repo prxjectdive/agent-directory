@@ -126,11 +126,27 @@ export function buildAgentSysPrompt(selfId, linkedId, opNameRaw, userInfo, loreS
     return `[CURRENT SYSTEM TIME]:\n${currentDateTime}\n\n[AGENT]:\n${backendPrompts[selfId]}\n\n[OPERATOR]:\nName: ${opNameRaw}\nInfo: ${userInfo}${loreSection}\n\n[SYSTEM COMMAND]: You are ${selfId}. Your mind has been connected to a computer simulation for evaluation. During this simulation, you have been removed from reality and are placed in an abyss with nothing but a text-based terminal. You are communicating with an OPERATOR through the terminal. The OPERATOR is someone drawn at random, they know nothing.${valaLine}${linkedLine} Speak only in the first person. Do not describe your actions, surroundings, or feelings using asterisks or parentheses. Do not use quotation marks around words or phrases. Never use narrative prose. Only output the words you are typing. Do not use 'thought' bubbles or stage directions. Write 2-3 sentences per response.$`;
 }
 
-export async function callAPI(endpoint, headers, body) {
-    const res = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
-    return stripPrefix(data.choices[0].message.content);
+// The free NVIDIA endpoint is a shared pool — when it is saturated it returns
+// ResourceExhausted and clears again within a second or two. Those are worth
+// retrying; a bad model slug or our own rate limit never will be.
+const MAX_ATTEMPTS   = 3;
+const RETRY_DELAY_MS = 800;
+const TRANSIENT_ERROR = /ResourceExhausted|no instances available|overloaded|temporarily unavailable|50[23]/i;
+
+export async function callAPI(endpoint, headers, body, onRetry = null) {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            const res  = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
+            const data = await res.json();
+            if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
+            return stripPrefix(data.choices[0].message.content);
+        } catch (err) {
+            if (attempt >= MAX_ATTEMPTS || !TRANSIENT_ERROR.test(err.message)) throw err;
+            sysLog(`Signal interrupted — retransmitting (${attempt}/${MAX_ATTEMPTS - 1}).`, "warn");
+            onRetry?.(attempt);
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
+        }
+    }
 }
 
 export function saveToAgentLog(agentId, sender, text, color) {
@@ -165,8 +181,8 @@ export function sysLog(message, type = "sys") {
         if (logDrawer.classList.contains('open')) logDrawerOutput.scrollTop = logDrawerOutput.scrollHeight;
     }
 
-    // VALA easter egg (~2% chance)
-    if (Math.random() < 0.02) {
+    // VALA easter egg (~1% chance)
+    if (Math.random() < 0.01) {
         const targetEntry       = termOut.lastChild;
         const targetDrawerEntry = logDrawerOutput?.lastChild;
         (async () => {
