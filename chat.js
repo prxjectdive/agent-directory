@@ -120,6 +120,13 @@ export function removeMessage(id) {
     if (el) el.remove();
 }
 
+// The terminal speaks for itself while a transmission is in flight — the agent
+// hasn't said anything yet, so the placeholder is SYSTEM, not the agent.
+const SYSTEM_COLOR = '#a3ffaa';
+function renderConnecting(id, right = false) {
+    renderMessage("SYSTEM", "Establishing connection...", SYSTEM_COLOR, id, right);
+}
+
 // Repaint a pending "Establishing connection..." bubble while callAPI retries
 const RECONNECT_COLOR = '#ffaa00';
 function markReconnecting(id) {
@@ -373,7 +380,7 @@ async function handleSend() {
 
     const agentProfile   = agentProfiles[activeAgentId];
     const typingId       = "type-" + Date.now();
-    renderMessage(activeAgentId, "Establishing connection...", agentProfile.color, typingId);
+    renderConnecting(typingId);
 
     const userApiKey     = localStorage.getItem('or_api_key');
     const model          = localStorage.getItem('or_model') || defaultModel;
@@ -414,7 +421,7 @@ async function handleSend() {
         const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
 
         const linkedTypingId = "lnk-op-" + Date.now();
-        renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
+        renderConnecting(linkedTypingId, true);
 
         let lText;
         try {
@@ -465,7 +472,7 @@ async function handleLink() {
     const linkedApiMsgs   = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
 
     const linkedTypingId = "lnk-t-" + Date.now();
-    renderRightMessage(linkedAgentId, "Establishing connection...", getAgentColor(linkedAgentId), linkedTypingId);
+    renderConnecting(linkedTypingId, true);
 
     let linkedResponse;
     try {
@@ -490,7 +497,7 @@ async function handleLink() {
     const activeApiMsgs   = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
 
     const activeTypingId = "act-t-" + Date.now();
-    renderMessage(activeAgentId, "Establishing connection...", agentProfiles[activeAgentId].color, activeTypingId);
+    renderConnecting(activeTypingId);
 
     let activeResponse;
     try {
