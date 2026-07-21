@@ -26,12 +26,6 @@ let tts        = null;
 let sampleRate = 44100;
 const styles   = new Map();   // voice id -> Style, built once per voice
 
-// Init is a long chain of things that can stall rather than throw, especially
-// on mobile. Announce every step so the system log shows where it stopped.
-function stage(text) {
-    self.postMessage({ type: 'stage', text });
-}
-
 // onnxruntime-web ships SIMD-only builds — without it there is no backend to
 // fall back to, so check before spending 380MB of downloads finding out.
 const SIMD_PROBE = new Uint8Array([
@@ -132,15 +126,9 @@ async function init(isMobile) {
     ort.env.wasm.numThreads = self.crossOriginIsolated ? (navigator.hardwareConcurrency || 4) : 1;
     ort.env.wasm.proxy = false;
 
-    // Report what the browser itself claims before trusting ORT's own probe —
-    // the two disagreeing means the detection is being blocked, not missing.
-    const simd = typeof WebAssembly === 'object' && WebAssembly.validate(SIMD_PROBE);
-    const gpu  = typeof navigator !== 'undefined' && 'gpu' in navigator;
-    stage(`env simd=${simd} webgpu=${gpu}`);
     checkWasmSupport();
 
     const providers = isMobile ? ['wasm'] : ['webgpu', 'wasm'];
-    stage(`backend ${providers[0]}, ${ort.env.wasm.numThreads} thread(s)`);
 
     // One combined percentage across all four files
     let loaded = 0;
@@ -156,7 +144,6 @@ async function init(isMobile) {
     for (const f of MODEL_FILES) {
         const before = loaded;
         let buf;
-        stage(`downloading ${f.name}`);
         try {
             buf = await cachedFetch(`${HF_BASE}/onnx/${f.name}`, report);
         } catch (err) {
@@ -164,7 +151,6 @@ async function init(isMobile) {
         }
         if (loaded === before) report(f.bytes);   // came from cache, credit it whole
 
-        stage(`initialising ${f.name}`);
         try {
             sessions.push(await withTimeout(
                 ort.InferenceSession.create(new Uint8Array(buf), sessionOpts),

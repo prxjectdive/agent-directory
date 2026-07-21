@@ -50,8 +50,6 @@ export async function loadTTS() {
         ttsWorker.onmessage = ({ data }) => {
             if (data.type === 'progress') {
                 muteStatusText.textContent = `COMMS: SYNC ${data.percent}%`;
-            } else if (data.type === 'stage') {
-                sysLog(`Comms: ${data.text}.`);
             } else if (data.type === 'init_status') {
                 muteStatusText.textContent = data.text;
             } else if (data.type === 'ready') {
@@ -192,9 +190,10 @@ export async function handleRadioCommand(enable) {
             } catch (err) {
                 muteStatusText.textContent = "COMMS: FAIL";
                 muteStatusText.classList.add('muted');
-                // Surface the reason — the log drawer is reachable on mobile,
-                // where this is the only way to see why comms failed.
-                sysLog(`Comms link failed: ${err?.message || err}`, "err");
+                // Operators get the in-world line; the real reason goes to the
+                // console, which is where anyone debugging this would look.
+                console.error('TTS init failed:', err);
+                sysLog("Voice link unsupported on this terminal.", "err");
             }
         } else {
             isMuted = false;
