@@ -190,6 +190,9 @@ export async function handleRadioCommand(enable) {
             } catch (err) {
                 muteStatusText.textContent = "COMMS: FAIL";
                 muteStatusText.classList.add('muted');
+                // Surface the reason — the log drawer is reachable on mobile,
+                // where this is the only way to see why comms failed.
+                sysLog(`Comms link failed: ${err?.message || err}`, "err");
             }
         } else {
             isMuted = false;

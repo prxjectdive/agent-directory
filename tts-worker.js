@@ -39,11 +39,32 @@ async function cachedFetch(url, onBytes) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
 
-    // Stream so the sync readout moves while a 245MB file lands
+    // Write to the cache off a teed branch so the bytes stream to disk instead
+    // of being copied again in memory. Not awaited yet — both branches have to
+    // be consumed concurrently or the idle one buffers everything.
+    let put = null;
+    if (cache) {
+        try { put = cache.put(url, res.clone()); } catch { /* quota */ }
+    }
+
+    // Stream so the sync readout moves while a 245MB file lands. When the length
+    // is known up front, fill one preallocated buffer rather than collecting
+    // chunks and concatenating — on a phone that difference is fatal.
     const total  = Number(res.headers.get('Content-Length')) || 0;
     const reader = res.body?.getReader();
     let buf;
-    if (reader) {
+    if (reader && total) {
+        const out = new Uint8Array(total);
+        let off = 0;
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            out.set(value, off);
+            off += value.length;
+            onBytes?.(value.length);
+        }
+        buf = out.buffer;
+    } else if (reader) {
         const chunks = [];
         let loaded = 0;
         for (;;) {
@@ -53,17 +74,17 @@ async function cachedFetch(url, onBytes) {
             loaded += value.length;
             onBytes?.(value.length);
         }
-        buf = new Uint8Array(total || loaded);
+        const out = new Uint8Array(loaded);
         let off = 0;
-        for (const c of chunks) { buf.set(c, off); off += c.length; }
-        buf = buf.buffer;
+        for (const c of chunks) { out.set(c, off); off += c.length; }
+        buf = out.buffer;
     } else {
         buf = await res.arrayBuffer();
         onBytes?.(buf.byteLength);
     }
 
-    if (cache) {
-        try { await cache.put(url, new Response(buf.slice(0))); } catch { /* quota */ }
+    if (put) {
+        try { await put; } catch { /* quota — model still loads, just uncached */ }
     }
     return buf;
 }
@@ -90,9 +111,18 @@ async function init(isMobile) {
     const sessions = [];
     for (const f of MODEL_FILES) {
         const before = loaded;
-        const buf = await cachedFetch(`${HF_BASE}/onnx/${f.name}`, report);
+        let buf;
+        try {
+            buf = await cachedFetch(`${HF_BASE}/onnx/${f.name}`, report);
+        } catch (err) {
+            throw new Error(`downloading ${f.name} (${(f.bytes / 1048576).toFixed(0)}MB): ${err.message}`);
+        }
         if (loaded === before) report(f.bytes);   // came from cache, credit it whole
-        sessions.push(await ort.InferenceSession.create(new Uint8Array(buf), sessionOpts));
+        try {
+            sessions.push(await ort.InferenceSession.create(new Uint8Array(buf), sessionOpts));
+        } catch (err) {
+            throw new Error(`loading ${f.name} into ${providers[0]}: ${err.message}`);
+        }
     }
 
     self.postMessage({ type: 'init_status', text: 'COMMS: INIT...' });
