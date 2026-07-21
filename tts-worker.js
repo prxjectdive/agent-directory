@@ -26,6 +26,20 @@ let tts        = null;
 let sampleRate = 44100;
 const styles   = new Map();   // voice id -> Style, built once per voice
 
+// Init is a long chain of things that can stall rather than throw, especially
+// on mobile. Announce every step so the system log shows where it stopped.
+function stage(text) {
+    self.postMessage({ type: 'stage', text });
+}
+
+// A hung WASM init never rejects, so nothing downstream ever learns about it.
+function withTimeout(promise, ms, what) {
+    return Promise.race([
+        promise,
+        new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timed out after ${ms / 1000}s`)), ms)),
+    ]);
+}
+
 // ============================================================
 // CACHED FETCH — Cache API keeps the ~380MB off the network on repeat visits
 // ============================================================
@@ -96,7 +110,15 @@ async function init(isMobile) {
     ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/';
     ort.env.logLevel = 'error';
 
+    // We are already inside a worker. Let ORT spawn its own nested workers and
+    // mobile browsers stall without ever rejecting — so pin it to a single
+    // thread and no proxy. Threads need cross-origin isolation anyway, which
+    // GitHub Pages does not serve.
+    ort.env.wasm.numThreads = self.crossOriginIsolated ? (navigator.hardwareConcurrency || 4) : 1;
+    ort.env.wasm.proxy = false;
+
     const providers = isMobile ? ['wasm'] : ['webgpu', 'wasm'];
+    stage(`backend ${providers[0]}, ${ort.env.wasm.numThreads} thread(s)`);
 
     // One combined percentage across all four files
     let loaded = 0;
@@ -112,14 +134,20 @@ async function init(isMobile) {
     for (const f of MODEL_FILES) {
         const before = loaded;
         let buf;
+        stage(`downloading ${f.name}`);
         try {
             buf = await cachedFetch(`${HF_BASE}/onnx/${f.name}`, report);
         } catch (err) {
             throw new Error(`downloading ${f.name} (${(f.bytes / 1048576).toFixed(0)}MB): ${err.message}`);
         }
         if (loaded === before) report(f.bytes);   // came from cache, credit it whole
+
+        stage(`initialising ${f.name}`);
         try {
-            sessions.push(await ort.InferenceSession.create(new Uint8Array(buf), sessionOpts));
+            sessions.push(await withTimeout(
+                ort.InferenceSession.create(new Uint8Array(buf), sessionOpts),
+                90000, `${f.name} init`
+            ));
         } catch (err) {
             throw new Error(`loading ${f.name} into ${providers[0]}: ${err.message}`);
         }

@@ -50,6 +50,8 @@ export async function loadTTS() {
         ttsWorker.onmessage = ({ data }) => {
             if (data.type === 'progress') {
                 muteStatusText.textContent = `COMMS: SYNC ${data.percent}%`;
+            } else if (data.type === 'stage') {
+                sysLog(`Comms: ${data.text}.`);
             } else if (data.type === 'init_status') {
                 muteStatusText.textContent = data.text;
             } else if (data.type === 'ready') {
