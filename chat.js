@@ -198,6 +198,8 @@ btnBackGrid.addEventListener('click', () => {
     btnOpenConfig.style.display   = 'block';
     screenEl.style.overflowY     = 'auto';
     screenEl.scrollTop           = gridScrollPosition;
+    // Model viewer is only valid while an evaluation is open — boot.js resets it
+    document.dispatchEvent(new CustomEvent('chat-closed'));
     history.replaceState({ view: 'grid' }, '');
 });
 

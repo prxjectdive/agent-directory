@@ -32,6 +32,7 @@ let currentModel   = null;
 let clock          = null;
 let animFrameId    = null;
 let wrapperEl      = null;
+let loadToken      = 0;   // invalidates in-flight loads when the viewer is unloaded
 
 // ============================================================================
 // INIT — lazy, called once when the MODEL tab is first opened
@@ -89,7 +90,7 @@ export function initModelViewer(container) {
         border-top:1px dashed #1a1a1a; margin-top:6px;
     `;
     infoBar.innerHTML = `
-        <span id="mv-label">// UNIT: NONE //</span>
+        <span id="mv-label">UNIT: NONE</span>
         <span id="mv-status">IDLE</span>
     `;
     container.appendChild(infoBar);
@@ -265,6 +266,52 @@ export function handleResize() {
 }
 
 // ============================================================================
+// DISPOSE CURRENT MODEL
+// ============================================================================
+function disposeGltf(root) {
+    root.traverse(child => {
+        if (child.isMesh) {
+            child.geometry?.dispose();
+            if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+            else child.material?.dispose();
+        }
+    });
+}
+
+function disposeCurrentModel() {
+    if (!currentModel) return;
+    scene.remove(currentModel);
+    disposeGltf(currentModel);
+    currentModel = null;
+}
+
+// ============================================================================
+// UNLOAD — return the viewer to its default empty state
+// ============================================================================
+export function unloadAgentModel() {
+    loadToken++;              // any in-flight load is now stale
+    if (!initialized) return;
+
+    disposeCurrentModel();
+
+    // Reset camera to the framing set up at init
+    if (controls && camera) {
+        controls.target.set(0, 1, 0);
+        camera.position.set(0, 1, 12);
+        controls.update();
+    }
+
+    // Reset UI chrome
+    document.querySelectorAll('.mv-agent-btn').forEach(b => b.classList.remove('active'));
+    const label   = document.getElementById('mv-label');
+    const status  = document.getElementById('mv-status');
+    const overlay = document.getElementById('mv-load-overlay');
+    if (label)   label.textContent  = 'UNIT: NONE';
+    if (status)  { status.textContent = 'IDLE'; status.style.color = '#555'; }
+    if (overlay) overlay.style.display = 'none';
+}
+
+// ============================================================================
 // LOAD MODEL
 // ============================================================================
 export async function loadAgentModel(agentId) {
@@ -279,26 +326,21 @@ export async function loadAgentModel(agentId) {
     document.querySelectorAll('.mv-agent-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.agentId === agentId);
     });
-    if (label)  label.textContent  = `// UNIT: ${agentId} //`;
+    if (label)  label.textContent  = `UNIT: ${agentId}`;
     if (status) { status.textContent = 'SYNCING...'; status.style.color = '#ffaa00'; }
     if (overlay){ overlay.style.display = 'flex'; overlay.textContent = 'LOADING MODEL...'; }
 
     // Remove previous model
-    if (currentModel) {
-        scene.remove(currentModel);
-        currentModel.traverse(child => {
-            if (child.isMesh) {
-                child.geometry?.dispose();
-                if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                else child.material?.dispose();
-            }
-        });
-        currentModel = null;
-    }
+    disposeCurrentModel();
 
+    const token  = ++loadToken;
     const loader = new GLTFLoader();
     try {
         const gltf = await new Promise((res, rej) => loader.load(path, res, undefined, rej));
+
+        // Operator left the evaluation while this was downloading — drop it
+        if (token !== loadToken) { disposeGltf(gltf.scene); return; }
+
         const model = gltf.scene;
 
         // Auto-scale and ground to floor
@@ -351,6 +393,7 @@ export async function loadAgentModel(agentId) {
         if (status)  { status.textContent = 'LOADED'; status.style.color = '#a3ffaa'; }
 
     } catch (err) {
+        if (token !== loadToken) return;   // stale failure — viewer already reset
         console.error('[MODEL VIEWER] Failed to load:', path, err);
         if (overlay) { overlay.style.display = 'flex'; overlay.textContent = 'ERROR: MODEL NOT FOUND'; }
         if (status)  { status.textContent = 'ERROR'; status.style.color = '#ff5555'; }

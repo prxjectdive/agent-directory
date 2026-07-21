@@ -4,7 +4,7 @@
 import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
-import { initModelViewer, loadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
+import { initModelViewer, loadAgentModel, unloadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
 import './audio.js'; // registers PTT listeners
 
 // ============================================================================
@@ -128,6 +128,13 @@ function closeAllDrawers() {
     closeTapeDrawer();
     closeModelDrawer();
 }
+
+// The 3D model belongs to the agent's evaluation — tear it down on exit so the
+// viewer sits at its default empty state back on the directory grid.
+document.addEventListener('chat-closed', () => {
+    closeModelDrawer();
+    unloadAgentModel();
+});
 
 // ============================================================================
 // MAIN SCREEN — shown immediately on load (boot sequence removed)
