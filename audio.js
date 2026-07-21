@@ -55,7 +55,9 @@ export async function loadTTS() {
             } else if (data.type === 'ready') {
                 resolve(ttsWorker);
             } else if (data.type === 'error') {
-                reject(new Error(data.message));
+                const err = new Error(data.message);
+                err.code = data.code;
+                reject(err);
             } else if (data.type === 'audio') {
                 ttsWorker.dispatchEvent(new MessageEvent('audio', { data }));
             }
@@ -193,7 +195,9 @@ export async function handleRadioCommand(enable) {
                 // Operators get the in-world line; the real reason goes to the
                 // console, which is where anyone debugging this would look.
                 console.error('TTS init failed:', err);
-                sysLog("Voice link unsupported on this terminal.", "err");
+                sysLog(err?.code === 'UNSUPPORTED'
+                    ? "Voice link unsupported on this terminal."
+                    : "Voice link unavailable.", "err");
             }
         } else {
             isMuted = false;

@@ -32,12 +32,20 @@ const SIMD_PROBE = new Uint8Array([
     0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123,
     3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11,
 ]);
+// Tagged so the UI can say "unsupported" for a browser that can never run
+// this, and "unavailable" for everything else — a bad network, mostly.
+function unsupported(message) {
+    const err = new Error(message);
+    err.code = 'UNSUPPORTED';
+    return err;
+}
+
 function checkWasmSupport() {
     if (typeof WebAssembly !== 'object') {
-        throw new Error('WebAssembly is disabled in this browser — voice cannot run here.');
+        throw unsupported('WebAssembly is disabled in this browser — voice cannot run here.');
     }
     if (!WebAssembly.validate(SIMD_PROBE)) {
-        throw new Error('this browser lacks WebAssembly SIMD, which the voice model requires.');
+        throw unsupported('this browser lacks WebAssembly SIMD, which the voice model requires.');
     }
 }
 
@@ -157,7 +165,12 @@ async function init(isMobile) {
                 90000, `${f.name} init`
             ));
         } catch (err) {
-            throw new Error(`loading ${f.name} into ${providers[0]}: ${err.message}`);
+            const detail = `loading ${f.name} into ${providers[0]}: ${err.message}`;
+            // Belt and braces: if ORT rejects the backend outright despite the
+            // precheck passing, that is still a capability problem, not a fault.
+            throw /SIMD|no available backend/i.test(err.message)
+                ? unsupported(detail)
+                : new Error(detail);
         }
     }
 
@@ -187,7 +200,7 @@ self.onmessage = async ({ data }) => {
         try {
             await init(data.isMobile);
         } catch (err) {
-            self.postMessage({ type: 'error', message: err.message });
+            self.postMessage({ type: 'error', message: err.message, code: err.code || null });
         }
 
     } else if (data.type === 'generate') {
