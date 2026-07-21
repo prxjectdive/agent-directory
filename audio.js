@@ -43,10 +43,10 @@ navigator.mediaDevices.getUserMedia = async function(constraints) {
 // ============================================================================
 // TTS
 // ============================================================================
-export async function loadKokoro() {
+export async function loadTTS() {
     if (ttsReady) return ttsReady;
     ttsReady = new Promise((resolve, reject) => {
-        ttsWorker = new Worker('tts-worker.js');
+        ttsWorker = new Worker('tts-worker.js', { type: 'module' });
         ttsWorker.onmessage = ({ data }) => {
             if (data.type === 'progress') {
                 muteStatusText.textContent = `COMMS: SYNC ${data.percent}%`;
@@ -75,11 +75,11 @@ export function stopTTS() {
     }
 }
 
-export async function playTTS(text, voice = 'af_sky', speed = 1.25) {
+export async function playTTS(text, voice = 'M1', detune = 0) {
     if (!isRadioInitialized || !ttsWorker || isMuted) return;
     const cleanText = text.replace(/\[.*?\]/g, '').replace(/\*.*?\*/g, '').trim();
     if (!cleanText) return;
-    ttsQueue.push({ cleanText, voice, speed });
+    ttsQueue.push({ cleanText, voice, detune });
     if (!ttsPlaying) processTTSQueue();
 }
 
@@ -98,7 +98,7 @@ async function processTTSQueue() {
     if (ttsPlaying || ttsQueue.length === 0) return;
     ttsPlaying = true;
     while (ttsQueue.length > 0) {
-        const { cleanText, voice, speed } = ttsQueue.shift();
+        const { cleanText, voice, detune } = ttsQueue.shift();
         try {
             if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
             if (audioContext.state === 'suspended') await audioContext.resume();
@@ -118,8 +118,7 @@ async function processTTSQueue() {
             buffer.getChannelData(0).set(result.audio);
             const source     = audioContext.createBufferSource();
             source.buffer    = buffer;
-            source.playbackRate.value = speed;
-            source.detune.value       = -350;
+            source.detune.value = detune;   // per-agent, in cents; playback rate left at 1.0
             const bandpass   = audioContext.createBiquadFilter();
             bandpass.type    = 'bandpass';
             bandpass.frequency.value = 1500;
@@ -179,7 +178,7 @@ export async function handleRadioCommand(enable) {
             muteStatusText.classList.remove('muted');
             try {
                 await loadMoonshine();
-                await loadKokoro();
+                await loadTTS();
                 isRadioInitialized = true;
                 isMuted            = false;
                 commModule.classList.add('active');

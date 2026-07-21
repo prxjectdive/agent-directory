@@ -410,7 +410,7 @@ async function handleSend() {
     removeMessage(typingId);
     addMessageToChat(activeAgentId, responseText, agentProfile.color);
     sysLog(`Agent ${activeAgentId} responded.`);
-    playTTS(responseText, agentProfile.voice, 1.25);
+    playTTS(responseText, agentProfile.voice, agentProfile.detune);
 
     if (linkedAgentId) {
         saveToAgentLog(linkedAgentId, 'USER', text, '#ffffff');
@@ -439,7 +439,7 @@ async function handleSend() {
         saveToAgentLog(linkedAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
         saveToAgentLog(activeAgentId, linkedAgentId, lText, agentProfiles[linkedAgentId].color);
         sysLog(`Agent ${linkedAgentId} responded.`);
-        playTTS(lText, agentProfiles[linkedAgentId].voice, 1.25);
+        playTTS(lText, agentProfiles[linkedAgentId].voice, agentProfiles[linkedAgentId].detune);
     }
 
     unlockInput();
@@ -489,7 +489,7 @@ async function handleLink() {
     saveToAgentLog(linkedAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
     saveToAgentLog(activeAgentId, linkedAgentId, linkedResponse, agentProfiles[linkedAgentId].color);
     sysLog(`Agent ${linkedAgentId} transmitted to ${activeAgentId}.`);
-    playTTS(linkedResponse, agentProfiles[linkedAgentId].voice, 1.25);
+    playTTS(linkedResponse, agentProfiles[linkedAgentId].voice, agentProfiles[linkedAgentId].detune);
 
     // Step 2: active agent responds
     const activeLog    = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
@@ -514,7 +514,7 @@ async function handleLink() {
     saveToAgentLog(activeAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
     saveToAgentLog(linkedAgentId, activeAgentId, activeResponse, agentProfiles[activeAgentId].color);
     sysLog(`Agent ${activeAgentId} responded to ${linkedAgentId}.`);
-    playTTS(activeResponse, agentProfiles[activeAgentId].voice, 1.25);
+    playTTS(activeResponse, agentProfiles[activeAgentId].voice, agentProfiles[activeAgentId].detune);
 
     restoreInput();
 }

@@ -23,12 +23,13 @@ export function setIsWaiting(v)           { isWaitingForResponse = v; }
 // ============================================================================
 // AGENT PROFILES
 // ============================================================================
+// voice: a Supertonic preset (M1-M5 / F1-F5). detune: cents applied on playback.
 export const agentProfiles = {
-    "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_onyx"    },
-    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_echo"    },
-    "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "af_alloy"   },
-    "SK-1N": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "am_michael" },
-    "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "af_bella" }
+    "D1-VE": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "M2", detune: 0    },
+    "X8-G":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "M4", detune: -100 },
+    "S-0L":  { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "F1", detune: -100 },
+    "SK-1N": { color: "#a3ffaa", greeting: "Simulation Loaded...", voice: "M1", detune: 0    },
+    "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "F3", detune: 0 }
 };
 
 export let backendPrompts = {};
