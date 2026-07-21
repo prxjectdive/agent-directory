@@ -378,11 +378,10 @@ async function handleSend() {
     const loreSection        = buildLore((logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase());
     const combinedSystemPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, loreSection, currentDateTime);
     const apiMessages        = [{ role: "system", content: combinedSystemPrompt }, ...buildApiMsgsFromLog(logHistory.slice(-200), activeAgentId)];
-    const modelTemp          = 0.8;
 
     let responseText;
     try {
-        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages, temperature: modelTemp });
+        responseText = await callAPI(endpoint, headers, { model, messages: apiMessages });
     } catch {
         removeMessage(typingId);
         addMessageToChat(activeAgentId, "Error: Connection lost.", "#ff5555");
@@ -409,7 +408,7 @@ async function handleSend() {
 
         let lText;
         try {
-            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages, temperature: modelTemp });
+            lText = await callAPI(endpoint, headers, { model, messages: linkedApiMessages });
         } catch {
             removeMessage(linkedTypingId);
             renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
@@ -443,7 +442,6 @@ async function handleLink() {
     const userInfo       = localStorage.getItem('cfg_user_info') || "No background.";
     const model          = localStorage.getItem('or_model') || defaultModel;
     const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-    const modelTemp      = 0.8;
     const userApiKey     = localStorage.getItem('or_api_key');
     const endpoint       = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
     const headers        = { "Content-Type": "application/json" };
@@ -461,7 +459,7 @@ async function handleLink() {
 
     let linkedResponse;
     try {
-        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs, temperature: modelTemp });
+        linkedResponse = await callAPI(endpoint, headers, { model, messages: linkedApiMsgs });
     } catch {
         removeMessage(linkedTypingId);
         renderRightMessage(linkedAgentId, "Error: Connection lost.", "#ff5555");
@@ -486,7 +484,7 @@ async function handleLink() {
 
     let activeResponse;
     try {
-        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs, temperature: modelTemp });
+        activeResponse = await callAPI(endpoint, headers, { model, messages: activeApiMsgs });
     } catch {
         removeMessage(activeTypingId);
         renderMessage(activeAgentId, "Error: Connection lost.", "#ff5555");
