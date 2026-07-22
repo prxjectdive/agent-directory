@@ -49,7 +49,18 @@
         object-src 'none';
         frame-src 'none';
     ">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!--
+      Pinch-zoom is deliberately left enabled. `maximum-scale=1.0, user-scalable=no`
+      was here to keep the CRT layout fixed, but blocking zoom denies the standard
+      way to read small text on a phone, and this design runs small on purpose.
+      Safari has ignored user-scalable=no since iOS 10 for exactly that reason, so
+      the lock was only ever binding on Android anyway.
+
+      The usual argument for keeping maximum-scale — stopping iOS auto-zooming when
+      a text field is focused — does not apply: the mobile breakpoint already sets
+      every input to 16px, which is the threshold iOS zooms below.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRXJECTDIVE</title>
     <meta name="description" content="SYSTEM TERMINAL // DIRECTORY: AGENTS">
     <meta name="theme-color" content="#000000">
