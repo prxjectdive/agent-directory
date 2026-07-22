@@ -11,6 +11,11 @@ export let isMobile = computeIsMobile();
 window.addEventListener('resize', () => { isMobile = computeIsMobile(); });
 export const defaultProxyUrl = "https://proxy.prxjectdive.workers.dev/";
 export const defaultModel    = "nvidia/nemotron-3-ultra-550b-a55b:free";
+// Reached only on the final retry, when the shared free pool behind the default
+// model has already dropped two requests in a row. The 120B slug is saturated
+// far less often, so the rare conversation that gets this far still gets an
+// answer. Smaller model, but a reply beats a dead terminal.
+export const fallbackModel   = "nvidia/nemotron-3-super-120b-a12b:free";
 
 export let gridScrollPosition  = 0;
 export let activeAgentId       = null;
@@ -269,10 +274,27 @@ const MAX_ATTEMPTS   = 3;
 const RETRY_DELAY_MS = 800;
 const TRANSIENT_ERROR = /ResourceExhausted|no instances available|overloaded|temporarily unavailable|50[23]/i;
 
+// Swapping the model out from under the operator is only defensible when the
+// operator never picked one. A custom key, proxy or model means their account,
+// their provider and their choice — those route exactly as configured and fail
+// on their own model rather than silently landing somewhere they did not ask for.
+function isDefaultRoute() {
+    return !getApiKey()
+        && !(localStorage.getItem('or_proxy_url') || "").trim()
+        && !(localStorage.getItem('or_model')     || "").trim();
+}
+
 export async function callAPI(endpoint, headers, body, onRetry = null) {
+    const canFallback = isDefaultRoute();
+
     for (let attempt = 1; ; attempt++) {
+        // Only the last attempt switches models — the default is the better
+        // writer, so it gets both of its chances before we trade down.
+        const sendBody = (canFallback && attempt === MAX_ATTEMPTS)
+            ? { ...body, model: fallbackModel }
+            : body;
         try {
-            const res  = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body) });
+            const res  = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(sendBody) });
             const data = await res.json();
             if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
             return stripPrefix(data.choices[0].message.content);
