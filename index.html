@@ -174,6 +174,10 @@
             letter-spacing: 1px; z-index: 5; flex-shrink: 0;
         }
 
+        /* The player writes its own markup in here, so it needs to own the space
+           left under the header — same split the mobile tape drawer uses. */
+        #tape-panel-output { flex: 1; min-height: 0; }
+
         #terminal-output {
             flex: 1; overflow-y: auto; scrollbar-width: none; font-size: 0.8em;
             color: #72a87c; line-height: 1.5; z-index: 5;
@@ -222,9 +226,15 @@
         /* =========================================
            UI COMPONENTS & TYPOGRAPHY
            ========================================= */
+        /* Both axes must be hidden, not just overflow-x. Setting one axis to
+           hidden forces the other to compute to `auto` rather than `visible`,
+           and `line-height: 1.1` on a fractional font-size leaves a 1px rounding
+           overflow — enough for `auto` to render a full scrollbar. It only showed
+           up at viewport sizes where 1.2vmin happened to round badly, which read
+           as a random aspect-ratio bug. The 1px is invisible when clipped. */
         .ascii-art {
             font-size: 1.2vmin; line-height: 1.1; white-space: pre; text-align: center;
-            overflow-x: hidden; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.8);
+            overflow: hidden; font-weight: bold; text-shadow: 0 0 5px rgba(255,255,255,0.8);
         }
 
         .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.9em; }
@@ -971,7 +981,10 @@
         <div class="terminal-header">SYSTEM LOG</div>
         <div id="terminal-output"></div>
     </div>
-    <div class="panel-content" id="panel-tape"></div>
+    <div class="panel-content" id="panel-tape">
+        <div class="terminal-header">TAPE PLAYER</div>
+        <div id="tape-panel-output"></div>
+    </div>
     <div class="panel-content" id="panel-model" style="display:none;">
         <div class="terminal-header">AGENT MODELS</div>
     </div>
@@ -1003,7 +1016,7 @@
 <div class="drawer-overlay" id="tape-overlay"></div>
 <div class="side-drawer" id="tape-drawer">
     <div class="drawer-header">
-        <span>MUSIC PLAYER</span>
+        <span>TAPE PLAYER</span>
         <button class="drawer-close" id="tape-drawer-close">✕</button>
     </div>
     <div id="tape-drawer-output"></div>

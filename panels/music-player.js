@@ -29,7 +29,7 @@ export async function initMusicPlayer() {
         tracks = res.ok ? await res.json() : [];
     } catch { tracks = []; }
 
-    renderInto(document.getElementById('panel-tape'));
+    renderInto(document.getElementById('tape-panel-output'));
     renderInto(document.getElementById('tape-drawer-output'));
 
     audio.addEventListener('timeupdate', onTimeUpdate);
