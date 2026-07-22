@@ -2,6 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!--
+      GitHub Pages cannot set response headers, so the policy ships as a meta tag.
+      Consequence: frame-ancestors and sandbox are header-only and cannot be
+      expressed here — clickjacking protection would need a host that sets headers.
+
+      script-src is 'self' with no inline allowance: there is no inline script on
+      the page, no importmap (three.js is vendored with relative imports) and no
+      inline event handlers. 'wasm-unsafe-eval' is required by onnxruntime-web to
+      compile the voice models; jsDelivr is required because onnxruntime and
+      moonshine-js load their own runtime assets from there.
+
+      style-src keeps 'unsafe-inline': the entire CRT design is one inline <style>
+      block plus inline style attributes throughout the markup, and inline styles
+      cannot execute script. This is the one deliberate relaxation.
+
+      connect-src needs blob: and data: — GLTFLoader decodes a GLB's embedded
+      textures through ImageBitmapLoader, which reads them with fetch() rather
+      than an <img>, so they are policed by connect-src and not img-src. Neither
+      scheme can reach the network; without them the 3D models load untextured.
+
+      worker-src lists jsDelivr even though the worker script itself is same-origin:
+      Chrome checks a module worker's whole static import graph against worker-src,
+      not just the top-level worker URL. tts-worker.js imports onnxruntime-web from
+      there (directly and via vendor/supertonic-helper.js), so with worker-src 'self'
+      alone the worker fails to start and voice silently never initialises.
+      Verified by bisection — script-src and connect-src do not cover this.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net;
+        worker-src 'self' blob: https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        media-src 'self';
+        font-src 'self';
+        connect-src 'self' blob: data:
+            https://proxy.prxjectdive.workers.dev
+            https://openrouter.ai
+            https://huggingface.co
+            https://*.hf.co
+            https://cdn.jsdelivr.net
+            https://download.moonshine.ai;
+        base-uri 'none';
+        form-action 'none';
+        object-src 'none';
+        frame-src 'none';
+    ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PRXJECTDIVE</title>
     <link rel="icon" href="favicon.ico" sizes="any">
@@ -219,6 +266,65 @@
         .config-textarea {
             background: #111; border: 1px solid #444; color: #fff; padding: 12px;
             font-family: inherit; resize: vertical; min-height: 120px; font-size: 0.9em; line-height: 1.4;
+        }
+        /* Checkbox drawn as a dark terminal cell rather than a native control.
+           Selector is doubled up to outrank `.config-group label`. */
+        #config-fields { display: flex; flex-direction: column; gap: 15px; }
+        .config-group .config-check {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 8px; cursor: pointer; user-select: none;
+            color: #777; font-size: 0.8em;
+        }
+        .config-group .config-check:hover { color: #999; }
+        .config-check input {
+            appearance: none; -webkit-appearance: none;
+            width: 13px; height: 13px; flex-shrink: 0; margin: 0;
+            background: #0a0a0a; border: 1px solid #333;
+            cursor: pointer; position: relative; transition: border-color 0.2s;
+        }
+        .config-check:hover input { border-color: #666; }
+        .config-check input:checked { border-color: #6b8f70; }
+        .config-check input:checked::after {
+            content: '×'; position: absolute; inset: -1px;
+            display: flex; align-items: center; justify-content: center;
+            color: #a3ffaa; font-size: 13px; line-height: 1;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* FAILSAFE — sits opposite the config heading, grey until hovered */
+        .config-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 15px;
+        }
+        .config-header h2 { margin-bottom: 0; }
+        .btn-failsafe {
+            width: auto; margin-top: 0; flex-shrink: 0;
+            font-size: 0.7em; padding: 6px 12px;
+            color: #666; border-color: #3a3a3a; background: #0a0a0a;
+        }
+        .btn-failsafe:hover {
+            background: #0a0a0a; color: #fff; border-color: #fff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.9);
+            box-shadow: 0 0 12px rgba(255,255,255,0.25);
+        }
+
+        #failsafe-warning {
+            display: none; flex-direction: column; gap: 12px;
+            border: 1px dashed #ff5555; padding: 18px;
+            background: rgba(255,85,85,0.04);
+        }
+        #failsafe-warning h3 {
+            margin: 0; color: #ff5555; font-size: 1em;
+            text-shadow: 0 0 8px rgba(255,85,85,0.6);
+        }
+        #failsafe-warning p  { margin: 0; color: #aaa; font-size: 0.85em; }
+        #failsafe-warning ul {
+            margin: 0; padding-left: 20px; color: #888;
+            font-size: 0.8em; line-height: 1.9;
+        }
+        #failsafe-warning .fs-final {
+            color: #ff5555; font-size: 0.8em;
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
         /* =========================================
@@ -613,38 +719,58 @@
  ) __/ )   / )  (  _( )  ) _)( (__   )(   )(_) ))( \ \/ / ) _) 
 (__)  (__\_)(_/\_)\___/ (____)\___) (__) (____/(__\ \__/ (____)
                     </pre>
-                    <p class="subtitle">SYSTEM TERMINAL v1.0 // DIRECTORY: AGENTS</p>
+                    <p class="subtitle">SYSTEM TERMINAL // DIRECTORY: AGENTS</p>
                     <button id="btn-open-config" class="btn" style="width: auto; margin: 0 auto; display: block; font-size: 0.85em; border-style: dashed;">[ SYSTEM CONFIGURATION ]</button>
                     <hr>
                 </div>
 
                 <!-- CONFIGURATION PANEL -->
                 <div id="config-interface">
-                    <h2 style="color: #a3ffaa;">> SYSTEM CONFIGURATION</h2>
-                    <div class="config-group">
-                        <label>API Endpoint / Proxy URL:</label>
-                        <input type="text" id="cfg-proxy-url" class="config-input" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                    <div class="config-header">
+                        <h2 style="color: #a3ffaa;">> SYSTEM CONFIGURATION</h2>
+                        <button id="btn-failsafe" class="btn btn-failsafe">[ FAILSAFE ]</button>
                     </div>
-                    <div class="config-group">
-                        <label>API Key (Optional):</label>
-                        <input type="password" id="cfg-api-key" class="config-input" placeholder="sk-or-v1-...">
+                    <div id="config-fields">
+                        <div class="config-group">
+                            <label>API Endpoint / Proxy URL:</label>
+                            <input type="text" id="cfg-proxy-url" class="config-input" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                        </div>
+                        <div class="config-group">
+                            <label>API Key (Optional):</label>
+                            <input type="password" id="cfg-api-key" class="config-input" placeholder="sk-or-v1-...">
+                            <label class="config-check">
+                                <input type="checkbox" id="cfg-remember-key">
+                                <span>Remember API key on this device</span>
+                            </label>
+                        </div>
+                        <div class="config-group">
+                            <label>AI Model:</label>
+                            <input type="text" id="cfg-model" class="config-input" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free">
+                        </div>
+                        <hr style="margin: 15px 0; border-top: 1px dotted #fff;">
+                        <h3 style="font-size: 1em; color: #fff;">> OPERATOR FILES:</h3>
+                        <div class="config-group">
+                            <label>Name</label>
+                            <input type="text" id="cfg-op-name" class="config-input" placeholder="Operator">
+                        </div>
+                        <div class="config-group">
+                            <label>Details</label>
+                            <textarea id="cfg-user-info" class="config-textarea" placeholder="Enter operator details here..."></textarea>
+                        </div>
                     </div>
-                    <div class="config-group">
-                        <label>AI Model:</label>
-                        <input type="text" id="cfg-model" class="config-input" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free">
-                    </div>
-                    <hr style="margin: 15px 0; border-top: 1px dotted #fff;">
-                    <h3 style="font-size: 1em; color: #fff;">> OPERATOR FILES:</h3>
-                    <div class="config-group">
-                        <label>Name</label>
-                        <input type="text" id="cfg-op-name" class="config-input" placeholder="Operator">
-                    </div>
-                    <div class="config-group">
-                        <label>Details</label>
-                        <textarea id="cfg-user-info" class="config-textarea" placeholder="Enter operator details here..."></textarea>
+                    <div id="failsafe-warning">
+                        <h3>&gt; FAILSAFE</h3>
+                        <p>Engaging the failsafe restores this terminal to factory defaults. The following is erased from this device:</p>
+                        <ul>
+                            <li>API endpoint, key and model settings</li>
+                            <li>Operator files — name and details</li>
+                            <li>All agent evaluation logs and dates</li>
+                        </ul>
+                        <p class="fs-final">This cannot be undone.</p>
                     </div>
                     <div class="config-actions" style="display: flex; gap: 15px; margin-top: 10px;">
-                        <button id="btn-save-config" class="btn" style="color: #a3ffaa; border-color: #a3ffaa;">[ SAVE FILES & REBOOT ]</button>
+                        <button id="btn-save-config" class="btn" style="color: #a3ffaa; border-color: #a3ffaa;">[ SAVE FILES &amp; REBOOT ]</button>
+                        <button id="btn-reset-config" class="btn" style="display: none; color: #ff5555; border-color: #ff5555;">[ RESET ]</button>
                         <button id="btn-close-config" class="btn" style="color: #ff5555; border-color: #ff5555;">[ CANCEL ]</button>
                     </div>
                 </div>
@@ -654,7 +780,7 @@
                     <div class="card" data-agent-id="D1-VE">
                         <div class="card-header"><h3># D1-VE</h3></div>
                         <div class="img-container">
-                            <img src="https://i.imgur.com/1xHihHN.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'" alt="D1-VE">
+                            <img src="media/card-D1-VE.png" alt="D1-VE">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>AC Agent</span></div>
@@ -673,7 +799,7 @@
                     <div class="card" data-agent-id="X8-G">
                         <div class="card-header"><h3># X8-G</h3></div>
                         <div class="img-container">
-                            <img src="https://i.imgur.com/gJH3c26.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80'" alt="X8-G">
+                            <img src="media/card-X8-G.png" alt="X8-G">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>TA Agent</span></div>
@@ -692,16 +818,16 @@
                     <div class="card" data-agent-id="S-0L">
                         <div class="card-header"><h3># S-0L</h3></div>
                         <div class="img-container">
-                            <img src="https://i.imgur.com/8jYIrQV.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&w=600&q=80'" alt="S-0L">
+                            <img src="media/card-S-0L.png" alt="S-0L">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>HA Agent</span></div>
                             <div class="data-row"><span>Status:</span> <span>Stable</span></div>
-                            <div class="data-row"><span>Function:</span> <span>High risk objectives</span></div>
+                            <div class="data-row"><span>Function:</span> <span>High-Risk objectives</span></div>
                             <div class="data-row"><span>Performance:</span> <span>-9.1%</span></div>
                             <div class="data-row"><span>Compliance Rate:</span> <span>92.6%</span></div>
                             <div class="data-row"><span>Last Evaluation:</span> <span class="eval-date">--/--/----</span></div>
-                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Re-calibration</span></div>
+                            <div class="data-row"><span>Next Milestone:</span> <span class="eval-date">Recalibration</span></div>
                         </div>
                         <div class="card-footer">
                             <a href="#" class="btn eval-trigger">[ EXECUTE EVALUATION ]</a>
@@ -711,7 +837,7 @@
                     <div class="card" data-agent-id="SK-1N">
                         <div class="card-header"><h3># SK-1N</h3></div>
                         <div class="img-container">
-                            <img src="https://i.imgur.com/jX2zNys.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'" alt="SK-1N">
+                            <img src="media/card-SK-1N.png" alt="SK-1N">
                         </div>
                         <div class="card-body">
                             <div class="data-row"><span>Unit Type:</span> <span>Human</span></div>
@@ -732,7 +858,7 @@
                     <hr>
                     <h2>prxject://blacksite</h2>
                     <div class="img-container" style="max-width: 300px; margin: 0 auto 20px;">
-                        <img src="https://i.imgur.com/L1JskZy.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1478358161113-b0e11994a36b?auto=format&fit=crop&w=600&q=80'" alt="Blacksite Album">
+                        <img src="media/card-blacksite-cover.png" alt="Blacksite Album">
                     </div>
                     <p style="font-weight: bold; font-size: 0.9em;">AVAILABLE NOW</p>
                     <a href="https://open.spotify.com/album/2T6So73ZfD1EExnYyk0Dig" target="_blank" class="btn" style="max-width: 300px;">[ LISTEN ON SPOTIFY ]</a>
@@ -847,14 +973,6 @@
     <div id="model-drawer-output" style="flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;"></div>
 </div>
 
-<script type="importmap">
-{
-    "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-}
-</script>
 <script type="module" src="boot.js"></script>
 </body>
 </html>

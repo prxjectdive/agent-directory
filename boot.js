@@ -1,7 +1,10 @@
 // ============================================================================
 // BOOT — entry point: config panel, agent directory, drawers, history router
 // ============================================================================
-import { sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile } from './core.js';
+import {
+    sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile,
+    getApiKey, setApiKey, forgetApiKey, isRememberApiKey, migrateLegacyApiKey
+} from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
 import { initModelViewer, loadAgentModel, unloadAgentModel, handleResize as modelViewerResize, MODEL_REGISTRY } from './panels/model-viewer.js';
@@ -24,6 +27,11 @@ const cfgApiKey       = document.getElementById('cfg-api-key');
 const cfgModel        = document.getElementById('cfg-model');
 const cfgOpName       = document.getElementById('cfg-op-name');
 const cfgUserInfo     = document.getElementById('cfg-user-info');
+const cfgRememberKey  = document.getElementById('cfg-remember-key');
+const btnFailsafe     = document.getElementById('btn-failsafe');
+const btnResetConfig  = document.getElementById('btn-reset-config');
+const configFields    = document.getElementById('config-fields');
+const failsafeWarning = document.getElementById('failsafe-warning');
 const evalButtons     = document.querySelectorAll('.eval-trigger');
 
 // Desktop panel tabs
@@ -142,24 +150,86 @@ document.addEventListener('chat-closed', () => {
 function showMain() {
     mainScreen.style.display = 'flex';
     screenEl.scrollTop       = 0;
+    const migrated = migrateLegacyApiKey();
     loadStoredDates();
     initSystemConfig();
     if (!isMobile) initModelViewer(panelModel);
     history.replaceState({ view: 'grid' }, '');
     sysLog("SYSTEM BOOT COMPLETE.", "sys");
     sysLog("Operator logged in to agent directory.", "warn");
+    if (migrated) {
+        sysLog("API key moved out of local storage — it now lasts for this session only.", "warn");
+        sysLog("Re-enable retention in System Configuration if wanted.", "warn");
+    }
 }
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 function initSystemConfig() {
-    cfgProxyUrl.value = localStorage.getItem('or_proxy_url') || "";
-    cfgApiKey.value   = localStorage.getItem('or_api_key')   || "";
-    cfgModel.value    = localStorage.getItem('or_model')     || "";
-    cfgOpName.value   = localStorage.getItem('cfg_op_name')  || "";
-    cfgUserInfo.value = localStorage.getItem('cfg_user_info') || "";
+    cfgProxyUrl.value       = localStorage.getItem('or_proxy_url') || "";
+    cfgApiKey.value         = getApiKey();
+    cfgRememberKey.checked  = isRememberApiKey();
+    cfgModel.value          = localStorage.getItem('or_model')     || "";
+    cfgOpName.value         = localStorage.getItem('cfg_op_name')  || "";
+    cfgUserInfo.value       = localStorage.getItem('cfg_user_info') || "";
 }
+
+// Unticking the box is itself the instruction to stop persisting — it takes
+// effect now, not on save, so the key never outlives the operator's intent.
+cfgRememberKey.addEventListener('change', () => {
+    setApiKey(cfgApiKey.value.trim(), cfgRememberKey.checked);
+    sysLog(cfgRememberKey.checked
+        ? "API key will be retained on this device."
+        : "API key retention disabled — key cleared from local storage.", "warn");
+});
+
+// ============================================================================
+// FAILSAFE — wipe this device back to factory defaults
+// ============================================================================
+let failsafeArmed = false;
+
+function setFailsafeMode(on) {
+    failsafeArmed = on;
+    configFields.style.display    = on ? 'none'  : 'flex';
+    failsafeWarning.style.display = on ? 'flex'  : 'none';
+    btnFailsafe.style.display     = on ? 'none'  : 'block';
+    btnSaveConfig.style.display   = on ? 'none'  : 'block';
+    btnResetConfig.style.display  = on ? 'block' : 'none';
+    // While armed, RESET is the only red control — CANCEL steps back to neutral
+    // so the destructive button is not one of two identical-looking options.
+    btnCloseConfig.style.color       = on ? '#888' : '#ff5555';
+    btnCloseConfig.style.borderColor = on ? '#888' : '#ff5555';
+}
+
+// Only ever the keys this app owns. localStorage is shared with every other
+// page on this origin, so localStorage.clear() would take out unrelated
+// projects' data — see SITE-NOTES.md.
+const APP_KEYS     = ['or_proxy_url', 'or_model', 'or_api_key', 'or_api_key_remember', 'cfg_op_name', 'cfg_user_info'];
+const APP_PREFIXES = ['chat_log_', 'eval_date_'];
+
+function wipeLocalData() {
+    const doomed = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (APP_KEYS.includes(k) || APP_PREFIXES.some(p => k.startsWith(p))) doomed.push(k);
+    }
+    doomed.forEach(k => localStorage.removeItem(k));
+    forgetApiKey();   // also clears the session copy
+    return doomed.length;
+}
+
+btnFailsafe.addEventListener('click', () => {
+    setFailsafeMode(true);
+    sysLog("FAILSAFE ARMED. Awaiting confirmation.", "warn");
+});
+
+btnResetConfig.addEventListener('click', () => {
+    const wiped = wipeLocalData();
+    sysLog(`FAILSAFE ENGAGED. ${wiped} record(s) purged. Rebooting terminal...`, "err");
+    // Full reload so every view, card date and in-memory link returns to default
+    setTimeout(() => location.reload(), 600);
+});
 
 btnOpenConfig.addEventListener('click', () => {
     sysLog("Operator accessed System Configuration.");
@@ -168,10 +238,18 @@ btnOpenConfig.addEventListener('click', () => {
     blacksiteBanner.style.display = 'none';
     btnOpenConfig.style.display   = 'none';
     configPanel.style.display     = 'flex';
+    setFailsafeMode(false);
     history.pushState({ view: 'config' }, '');
 });
 
 btnCloseConfig.addEventListener('click', () => {
+    // While the failsafe is armed, CANCEL backs out of it rather than leaving
+    // the panel — the operator is answering the warning, not closing settings.
+    if (failsafeArmed) {
+        setFailsafeMode(false);
+        sysLog("Failsafe aborted.", "sys");
+        return;
+    }
     sysLog("Operator closed System Configuration.");
     configPanel.style.display     = 'none';
     agentGrid.style.display       = 'grid';
@@ -184,7 +262,7 @@ btnCloseConfig.addEventListener('click', () => {
 
 btnSaveConfig.addEventListener('click', () => {
     localStorage.setItem('or_proxy_url', cfgProxyUrl.value.trim());
-    localStorage.setItem('or_api_key',   cfgApiKey.value.trim());
+    setApiKey(cfgApiKey.value.trim(), cfgRememberKey.checked);
     localStorage.setItem('or_model',     cfgModel.value.trim());
     localStorage.setItem('cfg_op_name',  cfgOpName.value.trim());
     localStorage.setItem('cfg_user_info', cfgUserInfo.value.trim());
@@ -264,6 +342,7 @@ window.addEventListener('popstate', (e) => {
         blacksiteBanner.style.display = 'none';
         btnOpenConfig.style.display   = 'none';
         configPanel.style.display     = 'flex';
+        setFailsafeMode(false);
 
     } else if (view === 'chat') {
         // Forward to chat

@@ -1,12 +1,15 @@
 // ============================================================================
 // MODEL VIEWER — Three.js 3D model panel with CRT post-processing
 // ============================================================================
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+// Three.js is vendored under vendor/three/ — see vendor/three/README.md. Imports
+// are relative rather than bare so the page needs no inline <script type="importmap">,
+// which lets the CSP stay at script-src 'self' with no inline allowance.
+import * as THREE from '../vendor/three/build/three.module.js';
+import { OrbitControls } from '../vendor/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../vendor/three/examples/jsm/loaders/GLTFLoader.js';
+import { EffectComposer } from '../vendor/three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '../vendor/three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from '../vendor/three/examples/jsm/postprocessing/ShaderPass.js';
 
 // ============================================================================
 // MODEL REGISTRY — add agents here as models become available
@@ -89,6 +92,7 @@ export function initModelViewer(container) {
         text-transform:uppercase; letter-spacing:1px;
         border-top:1px dashed #1a1a1a; margin-top:6px;
     `;
+    // Fixed markup, no interpolation — both spans are filled via textContent.
     infoBar.innerHTML = `
         <span id="mv-label">UNIT: NONE</span>
         <span id="mv-status">IDLE</span>

@@ -9,7 +9,8 @@ import {
     saveToAgentLog, stripPrefix, defaultProxyUrl, defaultModel,
     activeAgentId, setActiveAgentId,
     gridScrollPosition, setGridScrollPosition,
-    isWaitingForResponse, setIsWaiting
+    isWaitingForResponse, setIsWaiting,
+    readChatLog, buildRequestTarget, isKnownAgent, makeSpan
 } from './core.js';
 import { isRadioInitialized, isMuted, stopTTS, playTTS, handleRadioCommand, lastMoonshineText } from './audio.js';
 
@@ -84,6 +85,9 @@ export function updateSendButton() {
 // ============================================================================
 // RENDER HELPERS
 // ============================================================================
+// Every part of a bubble is untrusted: `text` is operator input or model output,
+// `sender` reaches here from a stored chat log. textContent renders the exact
+// same line the template did, minus the HTML parser.
 export function renderMessage(sender, text, color, id = null, right = false) {
     const row    = document.createElement('div');
     row.className = `chat-msg-row ${(sender === 'USER' || right) ? 'row-user' : 'row-agent'}`;
@@ -92,11 +96,11 @@ export function renderMessage(sender, text, color, id = null, right = false) {
     bubble.className = `chat-bubble ${sender === 'USER' ? 'bubble-user' : 'bubble-agent'}`;
     if (sender === 'USER') {
         const opName = (localStorage.getItem('cfg_op_name') || 'Operator').toUpperCase();
-        bubble.innerHTML = `> [${opName}]: ${text}`;
+        bubble.textContent = `> [${opName}]: ${text}`;
     } else {
         bubble.style.borderColor = color;
         bubble.style.color       = color;
-        bubble.innerHTML = `> [${sender}]: ${text}`;
+        bubble.textContent = `> [${sender}]: ${text}`;
     }
     row.appendChild(bubble);
     chatHistory.appendChild(row);
@@ -110,9 +114,7 @@ export function renderRightMessage(sender, text, color, id = null) {
 export function addMessageToChat(sender, text, color) {
     renderMessage(sender, text, color);
     if (!activeAgentId) return;
-    const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
-    logs.push({ sender, text, color });
-    localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
+    saveToAgentLog(activeAgentId, sender, text, color);
 }
 
 export function removeMessage(id) {
@@ -134,17 +136,17 @@ function markReconnecting(id) {
     if (!bubble) return;
     bubble.style.borderColor = RECONNECT_COLOR;
     bubble.style.color       = RECONNECT_COLOR;
-    bubble.innerHTML         = '> [SYSTEM]: Signal interrupted. Reconnecting...';
+    bubble.textContent       = '> [SYSTEM]: Signal interrupted. Reconnecting...';
 }
 
 // ============================================================================
 // CHAT HISTORY
 // ============================================================================
 export function loadChatHistory(agentId) {
-    chatHistory.innerHTML = '';
-    const savedHistory = localStorage.getItem(`chat_log_${agentId}`);
-    if (savedHistory) {
-        JSON.parse(savedHistory).forEach(log => {
+    chatHistory.replaceChildren();
+    const savedHistory = readChatLog(agentId);
+    if (savedHistory.length) {
+        savedHistory.forEach(log => {
             const isOtherAgent = log.sender !== 'USER' && log.sender !== 'SYSTEM' && log.sender !== agentId;
             const isError      = log.color === '#ff5555' && log.sender !== 'SYSTEM' && log.sender !== 'USER';
             const color        = (log.sender === 'USER' || log.sender === 'SYSTEM' || isError) ? log.color : getAgentColor(log.sender);
@@ -159,6 +161,9 @@ export function loadChatHistory(agentId) {
 // OPEN / CLOSE CHAT
 // ============================================================================
 export function openChatInterface(agentId, pushHistory = true) {
+    // agentId arrives from card markup, history.state and cross-module events —
+    // anything not in the roster would sail straight into a null profile lookup.
+    if (!isKnownAgent(agentId)) { sysLog(`Unknown agent: ${agentId}`, "err"); return; }
     setActiveAgentId(agentId);
     mainHeader.style.display    = 'none';
     mainFooter.style.display    = 'none';
@@ -175,7 +180,7 @@ export function openChatInterface(agentId, pushHistory = true) {
 
     // Desync: link
     if (!getLinkedAgent()) {
-        const logs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
+        const logs = readChatLog(agentId);
         const lastLinkMsg = [...logs].reverse().find(m =>
             m.sender === 'SYSTEM' && (
                 m.text.toLowerCase().startsWith('link established with') ||
@@ -190,7 +195,7 @@ export function openChatInterface(agentId, pushHistory = true) {
 
     // Desync: comms
     if (isMuted || !isRadioInitialized) {
-        const logs = JSON.parse(localStorage.getItem(`chat_log_${agentId}`) || "[]");
+        const logs = readChatLog(agentId);
         const lastCommsMsg = [...logs].reverse().find(m =>
             m.sender === 'SYSTEM' && (m.text === 'Radio communication enabled.' || m.text === 'Radio communication disabled.')
         );
@@ -239,12 +244,18 @@ function renderAutocomplete(matches) {
     acVisible = matches;
     acIndex   = -1;
     if (matches.length === 0) { cmdAutocomplete.style.display = 'none'; return; }
-    cmdAutocomplete.innerHTML = '';
+    cmdAutocomplete.replaceChildren();
     matches.forEach((m, i) => {
         const row   = document.createElement('div');
         row.style.cssText = 'display:flex; justify-content:space-between; padding:8px 12px; cursor:pointer; border-bottom:1px solid #1a1a1a; gap:20px;';
-        const label = m.ghost ? `/link <span style="color:#555;">[agent]</span>` : m.cmd;
-        row.innerHTML = `<span style="color:#fff; white-space:nowrap;">${label}</span><span style="color:#555; text-align:right;">${m.desc}</span>`;
+
+        const label = makeSpan({ style: { color: '#fff', whiteSpace: 'nowrap' } });
+        if (m.ghost) {
+            label.append('/link ', makeSpan({ text: m.ghost, color: '#555' }));
+        } else {
+            label.textContent = m.cmd;
+        }
+        row.append(label, makeSpan({ text: m.desc, style: { color: '#555', textAlign: 'right' } }));
         row.addEventListener('mousedown', e => { e.preventDefault(); applyAutocomplete(m); });
         row.addEventListener('mouseenter', () => setAcIndex(i));
         cmdAutocomplete.appendChild(row);
@@ -259,7 +270,8 @@ function setAcIndex(i) {
 
 function updateGhost() {
     if (chatInput.value === '/link ') {
-        cmdGhost.innerHTML     = '<span style="color:transparent;">/link </span>[agent]';
+        // The typed part is spaced out invisibly so [agent] lands after the caret
+        cmdGhost.replaceChildren(makeSpan({ text: '/link ', color: 'transparent' }), '[agent]');
         cmdGhost.style.display = 'block';
     } else {
         cmdGhost.style.display = 'none';
@@ -299,21 +311,21 @@ async function handleSend() {
 
         if (cmd === "/clear") {
             localStorage.removeItem(`chat_log_${activeAgentId}`);
-            chatHistory.innerHTML = '';
+            chatHistory.replaceChildren();
             addMessageToChat("SYSTEM", agentProfiles[activeAgentId].greeting, agentProfiles[activeAgentId].color);
             sysLog(`History purged for unit ${activeAgentId}.`, "sys");
             return;
         }
 
         if (cmd === "/back") {
-            const logs = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+            const logs = readChatLog(activeAgentId);
             if (logs.length > 1) {
                 const removed = logs.pop();
                 localStorage.setItem(`chat_log_${activeAgentId}`, JSON.stringify(logs));
                 loadChatHistory(activeAgentId);
                 sysLog(`Removed latest message from ${removed.sender}.`, "sys");
                 if (linkedAgentId) {
-                    const otherLogs = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+                    const otherLogs = readChatLog(linkedAgentId);
                     if (otherLogs.length > 0 && otherLogs[otherLogs.length - 1].text === removed.text) {
                         otherLogs.pop();
                         localStorage.setItem(`chat_log_${linkedAgentId}`, JSON.stringify(otherLogs));
@@ -382,15 +394,12 @@ async function handleSend() {
     const typingId       = "type-" + Date.now();
     renderConnecting(typingId);
 
-    const userApiKey     = localStorage.getItem('or_api_key');
     const model          = localStorage.getItem('or_model') || defaultModel;
     const opNameRaw      = localStorage.getItem('cfg_op_name') || "Operator";
     const userInfo       = localStorage.getItem('cfg_user_info') || "No background.";
-    const logHistory     = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+    const logHistory     = readChatLog(activeAgentId);
     const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-    const endpoint       = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-    const headers        = { "Content-Type": "application/json" };
-    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+    const { endpoint, headers } = buildRequestTarget();
 
     const loreSection        = buildLore((logHistory.slice(-10).map(m => m.text).join(" ") + " " + text).toLowerCase());
     const combinedSystemPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, loreSection, currentDateTime);
@@ -416,7 +425,7 @@ async function handleSend() {
         saveToAgentLog(linkedAgentId, 'USER', text, '#ffffff');
         saveToAgentLog(linkedAgentId, activeAgentId, responseText, agentProfile.color);
 
-        const linkedLog       = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+        const linkedLog       = readChatLog(linkedAgentId);
         const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
         const linkedApiMessages = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog.slice(-200), linkedAgentId)];
 
@@ -459,15 +468,12 @@ async function handleLink() {
     const userInfo       = localStorage.getItem('cfg_user_info') || "No background.";
     const model          = localStorage.getItem('or_model') || defaultModel;
     const currentDateTime = new Date().toLocaleString('en-US', { hour12: false });
-    const userApiKey     = localStorage.getItem('or_api_key');
-    const endpoint       = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-    const headers        = { "Content-Type": "application/json" };
-    if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+    const { endpoint, headers } = buildRequestTarget();
 
     const restoreInput = () => { unlockInput(); };
 
     // Step 1: linked agent speaks
-    const linkedLog    = JSON.parse(localStorage.getItem(`chat_log_${linkedAgentId}`) || "[]");
+    const linkedLog    = readChatLog(linkedAgentId);
     const linkedSysPrompt = buildAgentSysPrompt(linkedAgentId, activeAgentId, opNameRaw, userInfo, buildLore(linkedLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const linkedApiMsgs   = [{ role: "system", content: linkedSysPrompt }, ...buildApiMsgsFromLog(linkedLog, linkedAgentId)];
 
@@ -492,7 +498,7 @@ async function handleLink() {
     playTTS(linkedResponse, agentProfiles[linkedAgentId].voice, agentProfiles[linkedAgentId].detune);
 
     // Step 2: active agent responds
-    const activeLog    = JSON.parse(localStorage.getItem(`chat_log_${activeAgentId}`) || "[]");
+    const activeLog    = readChatLog(activeAgentId);
     const activeSysPrompt = buildAgentSysPrompt(activeAgentId, linkedAgentId, opNameRaw, userInfo, buildLore(activeLog.slice(-10).map(m => m.text).join(" ")), currentDateTime);
     const activeApiMsgs   = [{ role: "system", content: activeSysPrompt }, ...buildApiMsgsFromLog(activeLog, activeAgentId)];
 

@@ -156,11 +156,15 @@ async function processTTSQueue() {
 // ============================================================================
 // STT / Moonshine
 // ============================================================================
+// Vendored at 0.1.29 — this used to import @latest straight off a CDN, which
+// meant an unreviewed third-party bundle could change under the site at any
+// time. The bundle still fetches its own model weights and onnxruntime from
+// download.moonshine.ai and jsDelivr at runtime; see SITE-NOTES.md.
 export async function loadMoonshine() {
     if (moonshineReady) return moonshineReady;
     moonshineReady = new Promise(async (resolve, reject) => {
         try {
-            const Moonshine = await import('https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js');
+            const Moonshine = await import('./vendor/moonshine.min.js');
             resolve(Moonshine);
         } catch (err) { reject(err); }
     });

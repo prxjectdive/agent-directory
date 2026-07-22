@@ -178,6 +178,8 @@ function renderInto(container) {
         return;
     }
 
+    // Fixed chrome authored here — no interpolation. Track rows and the cover
+    // are filled in afterwards from data, through the DOM.
     container.innerHTML = `
         <div class="tape-player">
             <div class="tp-cover-wrap">
@@ -209,22 +211,42 @@ function renderInto(container) {
                     <span class="tp-duration">0:00</span>
                 </div>
             </div>
-            <div class="tp-tracklist">
-                ${tracks.map((t, i) => `
-                    <div class="tp-track" data-index="${i}">
-                        <span class="tp-track-num">${String(i + 1).padStart(2, '0')}.</span>
-                        <span class="tp-track-name">${t.title}</span>
-                        <span class="tp-track-dur">${t.duration}</span>
-                    </div>
-                `).join('')}
-            </div>
+            <div class="tp-tracklist"></div>
             <div class="tp-scope">
                 <canvas class="tp-scope-canvas" width="240" height="180"></canvas>
             </div>
         </div>
     `;
 
+    renderTracklist(container);
     wireControls(container);
+}
+
+// Track titles come out of data/tracks.json. It is our own file, but it is still
+// fetched JSON being written into the page — build the rows, don't parse them.
+function renderTracklist(container) {
+    const list = container.querySelector('.tp-tracklist');
+    if (!list) return;
+    list.replaceChildren(...tracks.map((t, i) => {
+        const row = document.createElement('div');
+        row.className   = 'tp-track';
+        row.dataset.index = String(i);
+
+        const num  = document.createElement('span');
+        num.className   = 'tp-track-num';
+        num.textContent = `${String(i + 1).padStart(2, '0')}.`;
+
+        const name = document.createElement('span');
+        name.className   = 'tp-track-name';
+        name.textContent = t.title ?? '';
+
+        const dur  = document.createElement('span');
+        dur.className   = 'tp-track-dur';
+        dur.textContent = t.duration ?? '';
+
+        row.append(num, name, dur);
+        return row;
+    }));
 }
 
 function wireControls(container) {
@@ -339,7 +361,7 @@ function updateAllViews() {
         if (dur)    dur.textContent    = track.duration;
 
         if (btn) {
-            btn.innerHTML = playing ? '[ || ]' : '[ &gt; ]';
+            btn.textContent = playing ? '[ || ]' : '[ > ]';
             btn.classList.toggle('playing', playing);
         }
 

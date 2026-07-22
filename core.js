@@ -32,6 +32,8 @@ export const agentProfiles = {
     "VALA":  { color: "#ff5555", greeting: "AGENT IS UNDER ISOLATION. CLOSE TERMINAL NOW.", voice: "F3", detune: 0 }
 };
 
+export const isKnownAgent = (id) => Object.prototype.hasOwnProperty.call(agentProfiles, id);
+
 export let backendPrompts = {};
 
 export async function loadAllPrompts() {
@@ -51,6 +53,137 @@ export async function loadAllPrompts() {
     } catch (err) {
         console.error("Failed to load prompt data:", err);
     }
+}
+
+// ============================================================================
+// SAFE DOM
+// ============================================================================
+// Nothing the operator types, the model returns, or localStorage hands back is
+// ever parsed as HTML. These build the same markup the string templates used
+// to, with every variable part as a text node.
+export function makeSpan({ className, color, text, style } = {}) {
+    const span = document.createElement('span');
+    if (className) span.className = className;
+    if (color)     span.style.color = color;
+    if (style)     Object.assign(span.style, style);
+    if (text !== undefined) span.textContent = text;
+    return span;
+}
+
+// ============================================================================
+// STORAGE READS
+// ============================================================================
+// Every localStorage value is attacker-reachable in the sense that anything on
+// https://prxjectdive.github.io shares this storage, and it also just rots —
+// a half-written chat log used to take the whole page down on JSON.parse.
+export function readJsonArray(key) {
+    let raw;
+    try { raw = localStorage.getItem(key); } catch { return []; }
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        console.warn(`Discarding unreadable localStorage entry: ${key}`);
+        return [];
+    }
+}
+
+// Chat logs are replayed straight into the DOM, so shape them on the way out.
+export function readChatLog(agentId) {
+    return readJsonArray(`chat_log_${agentId}`)
+        .filter(m => m && typeof m.sender === 'string' && typeof m.text === 'string')
+        .map(m => ({
+            sender: m.sender,
+            text:   m.text,
+            color:  typeof m.color === 'string' ? m.color : undefined,
+        }));
+}
+
+// ============================================================================
+// API KEY STORAGE
+// ============================================================================
+// localStorage on GitHub Pages is keyed to the whole https://prxjectdive.github.io
+// origin — it is NOT scoped to /agent-directory/. Every other project page on
+// that account shares it, and any script running there can read it. So the key
+// lives in sessionStorage (this tab, until it closes) unless the operator ticks
+// "Remember API key on this device", which is the only thing that ever writes it
+// to disk. See SITE-NOTES.md.
+const API_KEY   = 'or_api_key';
+const REMEMBER  = 'or_api_key_remember';
+
+export function isRememberApiKey() {
+    try { return localStorage.getItem(REMEMBER) === 'true'; } catch { return false; }
+}
+
+export function getApiKey() {
+    try {
+        return sessionStorage.getItem(API_KEY) || (isRememberApiKey() ? localStorage.getItem(API_KEY) : null) || "";
+    } catch { return ""; }
+}
+
+// Writes to exactly one store and clears the other, so a key can never be left
+// behind on disk by flipping the checkbox.
+export function setApiKey(key, remember) {
+    forgetApiKey();
+    try {
+        localStorage.setItem(REMEMBER, remember ? 'true' : 'false');
+        if (!key) return;
+        (remember ? localStorage : sessionStorage).setItem(API_KEY, key);
+    } catch (err) { console.error('Could not store API key:', err); }
+}
+
+export function forgetApiKey() {
+    try { localStorage.removeItem(API_KEY);   } catch {}
+    try { sessionStorage.removeItem(API_KEY); } catch {}
+}
+
+// Older builds wrote the key to localStorage unconditionally. Nobody opted into
+// that, so move it into the session store on first load: it keeps working in
+// this tab, it just stops living on disk until the operator asks for it.
+export function migrateLegacyApiKey() {
+    try {
+        if (localStorage.getItem(REMEMBER) !== null) return false;
+        const legacy = localStorage.getItem(API_KEY);
+        localStorage.setItem(REMEMBER, 'false');
+        if (!legacy) return false;
+        sessionStorage.setItem(API_KEY, legacy);
+        localStorage.removeItem(API_KEY);
+        return true;
+    } catch { return false; }
+}
+
+// ============================================================================
+// REQUEST TARGET
+// ============================================================================
+export const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions";
+
+// An API key is a bearer credential — it goes over TLS or it does not go at all.
+function isSecureEndpoint(url) {
+    try {
+        const { protocol, hostname } = new URL(url, location.href);
+        return protocol === 'https:' || hostname === 'localhost' || hostname === '127.0.0.1';
+    } catch { return false; }
+}
+
+let warnedInsecure = false;
+
+// Single source of truth for where a chat request goes and what it carries.
+export function buildRequestTarget() {
+    const apiKey   = getApiKey();
+    const custom   = (localStorage.getItem('or_proxy_url') || "").trim();
+    const endpoint = custom || (apiKey ? openRouterEndpoint : defaultProxyUrl);
+    const headers  = { "Content-Type": "application/json" };
+
+    if (apiKey) {
+        if (isSecureEndpoint(endpoint)) {
+            headers["Authorization"] = `Bearer ${apiKey}`;
+        } else if (!warnedInsecure) {
+            warnedInsecure = true;
+            sysLog("Endpoint is not encrypted — API key withheld.", "err");
+        }
+    }
+    return { endpoint, headers };
 }
 
 // ============================================================================
@@ -104,8 +237,10 @@ export function collapseRoles(msgs) {
 }
 
 export function buildLore(scanText) {
-    const matched = (window.lorebook || [])
-        .filter(e => e.keywords.some(kw => scanText.toLowerCase().includes(kw.toLowerCase())))
+    const entries = Array.isArray(window.lorebook) ? window.lorebook : [];
+    const matched = entries
+        .filter(e => Array.isArray(e?.keywords) && typeof e.content === 'string')
+        .filter(e => e.keywords.some(kw => scanText.toLowerCase().includes(String(kw).toLowerCase())))
         .map(e => e.content).join("\n\n");
     return matched ? `\n\n[WORLD LORE]:\n${matched}` : "";
 }
@@ -151,15 +286,18 @@ export async function callAPI(endpoint, headers, body, onRetry = null) {
 }
 
 export function saveToAgentLog(agentId, sender, text, color) {
-    const key = `chat_log_${agentId}`;
-    const logs = JSON.parse(localStorage.getItem(key) || "[]");
+    const key  = `chat_log_${agentId}`;
+    const logs = readJsonArray(key);
     logs.push({ sender, text, color });
-    localStorage.setItem(key, JSON.stringify(logs));
+    try { localStorage.setItem(key, JSON.stringify(logs)); }
+    catch (err) { console.error('Could not write chat log:', err); }
 }
 
 // ============================================================================
 // SYSTEM LOG
 // ============================================================================
+const LOG_TYPES = ['sys', 'warn', 'err'];
+
 export function sysLog(message, type = "sys") {
     const termOut        = document.getElementById('terminal-output');
     const logDrawerOutput = document.getElementById('log-drawer-output');
@@ -169,8 +307,17 @@ export function sysLog(message, type = "sys") {
     const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     const div = document.createElement('div');
     div.className = 'log-entry';
-    const spanStyle = message.includes('VALA') ? ' style="color:#ff5555;"' : '';
-    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}"${spanStyle}>${message}</span>`;
+    // Log lines quote agent ids, failed commands and error text straight back at
+    // the operator — all of it is text, none of it is markup.
+    div.append(
+        makeSpan({ className: 'log-time', text: `[${time}]` }),
+        document.createTextNode(' '),
+        makeSpan({
+            className: `log-${LOG_TYPES.includes(type) ? type : 'sys'}`,
+            color: message.includes('VALA') ? '#ff5555' : undefined,
+            text: message,
+        })
+    );
 
     termOut.appendChild(div);
 
@@ -188,11 +335,8 @@ export function sysLog(message, type = "sys") {
         const targetDrawerEntry = logDrawerOutput?.lastChild;
         (async () => {
             try {
-                const userApiKey = localStorage.getItem('or_api_key');
-                const model      = localStorage.getItem('or_model') || defaultModel;
-                const endpoint   = localStorage.getItem('or_proxy_url') || (userApiKey ? "https://openrouter.ai/api/v1/chat/completions" : defaultProxyUrl);
-                const headers    = { "Content-Type": "application/json" };
-                if (userApiKey) headers["Authorization"] = `Bearer ${userApiKey}`;
+                const model = localStorage.getItem('or_model') || defaultModel;
+                const { endpoint, headers } = buildRequestTarget();
                 const res  = await fetch(endpoint, {
                     method: "POST", headers,
                     body: JSON.stringify({
@@ -208,7 +352,16 @@ export function sysLog(message, type = "sys") {
                     const msg     = stripPrefix(data.choices[0].message.content).replace(/^["']|["']$/g, '').trim();
                     const valaDiv = document.createElement('div');
                     valaDiv.className = 'log-entry vala-message pulse';
-                    valaDiv.innerHTML = `<span class="log-time" style="color:#ff5555; text-shadow: 0 0 5px #ff5555;">[XX:XX:XX]</span> <span style="color:#aaa; font-style:italic;">${msg}</span>`;
+                    // msg is raw model output — text node, never markup.
+                    valaDiv.append(
+                        makeSpan({
+                            className: 'log-time',
+                            text: '[XX:XX:XX]',
+                            style: { color: '#ff5555', textShadow: '0 0 5px #ff5555' },
+                        }),
+                        document.createTextNode(' '),
+                        makeSpan({ text: msg, style: { color: '#aaa', fontStyle: 'italic' } })
+                    );
                     valaDiv.onclick = () => {
                         sysLog("ANOMALOUS CONNECTION ESTABLISHED.", "err");
                         // Dispatch events — handled by chat.js and boot.js
