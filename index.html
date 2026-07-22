@@ -307,6 +307,20 @@
             color: #777; font-size: 0.8em;
         }
         .config-group .config-check:hover { color: #999; }
+        /* Validation message under a field. Sits in the flow so the panel grows
+           rather than the text overlapping whatever is below it. */
+        .config-error {
+            color: #ff5555; font-size: 0.8em; margin: 4px 0 0;
+            text-shadow: 0 0 4px rgba(255, 85, 85, 0.5);
+        }
+        .config-error[hidden] { display: none; }
+        /* Flags the fields that would SATISFY the requirement, not the one that
+           broke it — the operator needs to know where to type, and the offending
+           model is already the field the message sits under. */
+        .config-input.flag-required {
+            border-color: #ff5555;
+            box-shadow: 0 0 6px rgba(255, 85, 85, 0.25);
+        }
         .config-check input {
             appearance: none; -webkit-appearance: none;
             width: 13px; height: 13px; flex-shrink: 0; margin: 0;
@@ -777,6 +791,7 @@
                         <div class="config-group">
                             <label>AI Model:</label>
                             <input type="text" id="cfg-model" class="config-input" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free">
+                            <p id="cfg-model-error" class="config-error" hidden></p>
                         </div>
                         <hr style="margin: 15px 0; border-top: 1px dotted #fff;">
                         <h3 style="font-size: 1em; color: #fff;">> OPERATOR FILES:</h3>

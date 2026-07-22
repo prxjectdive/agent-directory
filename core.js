@@ -173,6 +173,27 @@ function isSecureEndpoint(url) {
 
 let warnedInsecure = false;
 
+// A custom model is only honoured when the request is leaving the default route.
+// An API key or a proxy URL each move it off the owner's Worker, and either one
+// alone is enough. A model set by itself still goes out on the owner's key, which
+// means the owner's quota pays for a model the site never intended to serve and
+// any bad output reads as the site's fault.
+//
+// That case is refused outright rather than quietly swapped back to the default:
+// coercing would leave the operator believing they are talking to a model they
+// are not, which is a worse failure than an error message.
+//
+// Takes its inputs rather than reading storage, so the config panel can validate
+// what is still sitting in the form fields — at save time the key has not been
+// written yet — while callAPI validates what is actually stored.
+// Names both fields in full, in the order they appear in the config panel, so the
+// sentence reads as a route to the fix rather than a rule to decode.
+export const MODEL_GATE_MSG = "Custom models require an API Endpoint/Proxy URL or API Key.";
+
+export function isCustomModelAllowed(apiKey, proxyUrl) {
+    return !!(apiKey || "").trim() || !!(proxyUrl || "").trim();
+}
+
 // Single source of truth for where a chat request goes and what it carries.
 export function buildRequestTarget() {
     const apiKey   = getApiKey();
@@ -285,6 +306,16 @@ function isDefaultRoute() {
 }
 
 export async function callAPI(endpoint, headers, body, onRetry = null) {
+    // Backstop for a config that never came through the panel — hand-edited
+    // storage, or an entry saved before this rule existed. Throwing here means
+    // the call sites render their usual "Connection lost." while the operator
+    // still gets told why in the system log.
+    const customModel = (localStorage.getItem('or_model') || "").trim();
+    if (customModel && !isCustomModelAllowed(getApiKey(), localStorage.getItem('or_proxy_url'))) {
+        sysLog(MODEL_GATE_MSG, "err");
+        throw new Error("Custom model not permitted on the default route.");
+    }
+
     const canFallback = isDefaultRoute();
 
     for (let attempt = 1; ; attempt++) {
@@ -296,6 +327,13 @@ export async function callAPI(endpoint, headers, body, onRetry = null) {
         try {
             const res  = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(sendBody) });
             const data = await res.json();
+            // The Worker refuses models outside its allowlist. Surface its reason
+            // in the operator's own words; the generic branch below would bury it.
+            // Not a transient error, so it is thrown past the retry check.
+            if (data.error?.code === 'model_not_allowed') {
+                sysLog(MODEL_GATE_MSG, "err");
+                throw new Error(data.error.message);
+            }
             if (data.error || !data.choices?.[0]) throw new Error(data.error?.message || "No response");
             return stripPrefix(data.choices[0].message.content);
         } catch (err) {

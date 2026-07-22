@@ -3,7 +3,8 @@
 // ============================================================================
 import {
     sysLog, loadAllPrompts, setGridScrollPosition, gridScrollPosition, activeAgentId, isMobile,
-    getApiKey, setApiKey, forgetApiKey, isRememberApiKey, migrateLegacyApiKey
+    getApiKey, setApiKey, forgetApiKey, isRememberApiKey, migrateLegacyApiKey,
+    isCustomModelAllowed, MODEL_GATE_MSG
 } from './core.js';
 import { openChatInterface, updateSendButton } from './chat.js';
 import { initMusicPlayer } from './panels/music-player.js';
@@ -48,6 +49,7 @@ const btnSaveConfig   = document.getElementById('btn-save-config');
 const cfgProxyUrl     = document.getElementById('cfg-proxy-url');
 const cfgApiKey       = document.getElementById('cfg-api-key');
 const cfgModel        = document.getElementById('cfg-model');
+const cfgModelError   = document.getElementById('cfg-model-error');
 const cfgOpName       = document.getElementById('cfg-op-name');
 const cfgUserInfo     = document.getElementById('cfg-user-info');
 const cfgRememberKey  = document.getElementById('cfg-remember-key');
@@ -189,6 +191,16 @@ function showMain() {
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
+// The wording lives in core.js so the panel and the system log can never drift
+// apart — the operator should read the same sentence wherever it surfaces.
+function setModelError(show) {
+    cfgModelError.textContent = show ? MODEL_GATE_MSG : "";
+    cfgModelError.hidden      = !show;
+    // Either field resolves it, so both are flagged — the operator picks one.
+    cfgProxyUrl.classList.toggle('flag-required', show);
+    cfgApiKey.classList.toggle('flag-required', show);
+}
+
 function initSystemConfig() {
     cfgProxyUrl.value       = localStorage.getItem('or_proxy_url') || "";
     cfgApiKey.value         = getApiKey();
@@ -196,7 +208,14 @@ function initSystemConfig() {
     cfgModel.value          = localStorage.getItem('or_model')     || "";
     cfgOpName.value         = localStorage.getItem('cfg_op_name')  || "";
     cfgUserInfo.value       = localStorage.getItem('cfg_user_info') || "";
+    setModelError(false);
 }
+
+// Clear the complaint the moment the operator starts satisfying it, from any of
+// the three fields involved — a message that outlives the problem reads as a bug.
+[cfgModel, cfgApiKey, cfgProxyUrl].forEach(field =>
+    field.addEventListener('input', () => { if (!cfgModelError.hidden) setModelError(false); })
+);
 
 // Unticking the box is itself the instruction to stop persisting — it takes
 // effect now, not on save, so the key never outlives the operator's intent.
@@ -262,6 +281,10 @@ btnOpenConfig.addEventListener('click', () => {
     btnOpenConfig.style.display   = 'none';
     configPanel.style.display     = 'flex';
     setFailsafeMode(false);
+    // Re-read storage on the way in as well as on the way out, so the fields can
+    // never show something storage no longer agrees with. Also clears any leftover
+    // validation state, so the panel always opens clean.
+    initSystemConfig();
     history.pushState({ view: 'config' }, '');
 });
 
@@ -284,9 +307,22 @@ btnCloseConfig.addEventListener('click', () => {
 });
 
 btnSaveConfig.addEventListener('click', () => {
-    localStorage.setItem('or_proxy_url', cfgProxyUrl.value.trim());
-    setApiKey(cfgApiKey.value.trim(), cfgRememberKey.checked);
-    localStorage.setItem('or_model',     cfgModel.value.trim());
+    const proxyUrl = cfgProxyUrl.value.trim();
+    const apiKey   = cfgApiKey.value.trim();
+    const model    = cfgModel.value.trim();
+
+    // Refuse the whole save, not just the model field. Writing the rest would
+    // leave the panel showing a model the site is not going to use. The panel
+    // stays open with every entry intact, so nothing typed is lost.
+    if (model && !isCustomModelAllowed(apiKey, proxyUrl)) {
+        setModelError(true);
+        cfgModel.focus();
+        return;
+    }
+
+    localStorage.setItem('or_proxy_url', proxyUrl);
+    setApiKey(apiKey, cfgRememberKey.checked);
+    localStorage.setItem('or_model',     model);
     localStorage.setItem('cfg_op_name',  cfgOpName.value.trim());
     localStorage.setItem('cfg_user_info', cfgUserInfo.value.trim());
     sysLog("Operator modified System Configuration settings.", "warn");
