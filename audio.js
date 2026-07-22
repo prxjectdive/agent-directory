@@ -62,7 +62,22 @@ export async function loadTTS() {
                 ttsWorker.dispatchEvent(new MessageEvent('audio', { data }));
             }
         };
-        ttsWorker.onerror = (e) => reject(e);
+        ttsWorker.onerror = (e) => {
+            // A module worker whose import graph is refused fails with an empty
+            // error event — no message, no filename — and raises no
+            // securitypolicyviolation on the document, because the worker never
+            // runs to report one. That signature is what a missing worker-src
+            // entry looks like, and it is otherwise undiagnosable, so name it.
+            if (!e.message) {
+                console.error(
+                    '[TTS] Worker failed to load and reported no detail. If a dependency was ' +
+                    'added, check that its origin is listed in worker-src in index.html — Chrome ' +
+                    'checks a module worker\'s entire static import graph against that directive, ' +
+                    'not just the worker URL.'
+                );
+            }
+            reject(e);
+        };
         ttsWorker.postMessage({ type: 'init', isMobile });
     });
     return ttsReady;

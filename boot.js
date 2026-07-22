@@ -11,6 +11,29 @@ import { initModelViewer, loadAgentModel, unloadAgentModel, handleResize as mode
 import './audio.js'; // registers PTT listeners
 
 // ============================================================================
+// CSP REPORTING
+// ============================================================================
+// The policy in index.html is load-bearing: add an external asset without also
+// adding its directive and the resource simply never arrives, often with no
+// obvious error. Name the directive that refused it so the next person is not
+// guessing. Console only — operators get in-world wording, diagnostics stay here.
+//
+// Note the blind spot: a module worker whose *import graph* is refused reports
+// nothing here, because the violation happens inside the worker and the worker
+// never runs to report it. audio.js covers that case at its own catch site.
+document.addEventListener('securitypolicyviolation', (e) => {
+    // Chrome reports the granular directive (script-src-elem, style-src-attr).
+    // The policy only spells out the base ones, so point at the line that
+    // actually exists rather than at a directive nobody will find.
+    const fixIn = e.effectiveDirective.replace(/-(elem|attr)$/, '');
+    console.error(
+        `[CSP] ${e.effectiveDirective} blocked ${e.blockedURI || '(inline)'}` +
+        (e.sourceFile ? ` (from ${e.sourceFile}:${e.lineNumber})` : '') +
+        ` — if this resource is expected, add its origin to ${fixIn} in index.html.`
+    );
+});
+
+// ============================================================================
 // DOM REFS
 // ============================================================================
 const screenEl        = document.getElementById('screen');
